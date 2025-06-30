@@ -1,6 +1,8 @@
 package com.example.demo3.exception;
 
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -13,8 +15,12 @@ import java.util.Map;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<String> handleBaseException(BaseException ex) {
+        logger.error("STATUS CODE:{}, {}", ex.getHttpStatus(), ex.getMessage());
         return ResponseEntity.status(ex.getHttpStatus()).body(ex.getMessage());
     }
 
@@ -40,8 +46,9 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<String> handleOtherException(Exception ex) {
-//        return ResponseEntity.internalServerError().body("Something went wrong");
-//    }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleOtherException(Exception ex) {
+        logger.error("Unhandled error:{}, error message: {}", ex.getClass(), ex.getMessage());
+        return ResponseEntity.internalServerError().body("Something went wrong");
+    }
 }

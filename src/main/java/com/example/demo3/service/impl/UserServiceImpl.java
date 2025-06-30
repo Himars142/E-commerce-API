@@ -9,6 +9,8 @@ import com.example.demo3.repository.UserRepository;
 import com.example.demo3.service.TokenService;
 import com.example.demo3.service.UserService;
 import jakarta.transaction.Transactional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final UserMapper userMapper;
+
+    public static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
 
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -43,9 +47,12 @@ public class UserServiceImpl implements UserService {
         if (!request.getPassword().equals(request.getPasswordConfirmation())) {
             throw new BadRequestException("Password and password confirmation are not equal");
         }
+        logger.info("Creating user with username: {}", request.getUsername());
         String accessToken = tokenService.generateAccessToken(request.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
+        logger.debug("User date before saving: {}", request);
         userRepository.save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
+        logger.info("User saved with username {}", request.getUsername());
         return new JwtResponseDTO(accessToken);
     }
 

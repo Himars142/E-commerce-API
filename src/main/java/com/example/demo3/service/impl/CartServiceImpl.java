@@ -15,6 +15,8 @@ import com.example.demo3.service.AuthService;
 import com.example.demo3.service.CartService;
 import com.example.demo3.service.ProductService;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,6 +27,8 @@ public class CartServiceImpl implements CartService {
     private final AuthService authService;
     private final CartMapper cartMapper;
     private final CartItemMapper cartItemMapper;
+
+    private static final Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
@@ -44,7 +48,9 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO getCart(String token) {
         UserEntity user = authService.validateTokenAndGetUser(token);
+        logger.info("Attempting to retrieve cart for user ID: {}", user.getId());
         CartEntity cart = getOrCreateCartForUser(user);
+        logger.info("Successfully retrieved cart for user ID: {}. Cart ID: {}", user.getId(), cart.getId());
         return cartMapper.toDTO(cart);
     }
 
@@ -52,57 +58,71 @@ public class CartServiceImpl implements CartService {
     @Override
     public void addItemToCart(String token, Long productId) {
         UserEntity user = authService.validateTokenAndGetUser(token);
+        logger.info("User ID {} attempting to add item ID {} to a cart", user.getId(), productId);
         CartEntity cart = getOrCreateCartForUser(user);
         ProductEntity product = productService.validateAndGetProduct(productId);
         CartItemEntity cartItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId())
                 .map(item -> cartItemMapper.changeQuantity(item, item.getQuantity() + 1))
                 .orElseGet(() -> cartItemMapper.createNewCartItemEntity(cart, product, 1));
         cartItemRepository.save(cartItem);
+        logger.info("Successfully added product ID {} (quantity: {}) to cart ID {} for user ID {}. Cart item ID: {}",
+                productId, cartItem.getQuantity(), cart.getId(), user.getId(), cartItem.getId());
     }
 
     @Transactional
     @Override
     public void updateCartItem(String token, Long productId, UpdateCartItemRequestDTO request) {
-        UserEntity user = authService.validateTokenAndGetUser(token);
         if (request.getQuantity() <= 0) {
             removeItemFromCart(token, productId);
             return;
         }
+        UserEntity user = authService.validateTokenAndGetUser(token);
+        logger.info("User ID {} attempting to update item ID {} in a cart", user.getId(), productId);
         ProductEntity product = productService.validateAndGetProduct(productId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity cartItemEntity = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
                 .map(cartItem -> cartItemMapper.changeQuantity(cartItem, request.getQuantity()))
                 .orElseGet(() -> cartItemMapper.createNewCartItemEntity(cart, product, request.getQuantity()));
         cartItemRepository.save(cartItemEntity);
+        logger.info("Successfully updated product ID {} (quantity: {}) in cart ID {} for user ID {}. Cart item ID: {}",
+                productId, request.getQuantity(), cart.getId(), user.getId(), cartItemEntity.getId());
     }
 
     @Transactional
     @Override
     public void removeItemFromCart(String token, Long productId) {
         UserEntity user = authService.validateTokenAndGetUser(token);
+        logger.info("User ID {} attempting to remove item ID {} in a cart", user.getId(), productId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity deleteEntity = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
                 .orElseThrow(() -> new NotFoundException("No product with the ID:" + productId + " in the cart"));
         cartItemRepository.delete(deleteEntity);
+        logger.info("Successfully removed product ID {} in cart {} for user ID {}.",
+                productId, cart.getId(), user.getId());
     }
 
     @Transactional
     @Override
     public int clearCart(String token) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        CartEntity cart = getOrCreateCartForUser(user);
+        logger.info("User ID {} attempting clear cart", user.getId());
+        CartEntity cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NotFoundException("User don`t have cart"));
+        logger.info("Successfully clear cart {} for user ID {}", cart.getId(), user.getId());
         return cartItemRepository.deleteAllByCartId(cart.getId());
     }
 
     @Transactional
     @Override
     public void deleteAllByCartId(Long id) {
+        logger.debug("Attempt to delete all cart items in cart ID {}", id);
         cartItemRepository.deleteAllByCartId(id);
     }
 
     @Transactional
     private CartEntity getOrCreateCartForUser(UserEntity user) {
+        logger.debug("Attempt to get or create and get cart for user ID {}", user.getId());
         return cartRepository.findByUserId(user.getId())
                 .orElseGet(() -> cartRepository.save(new CartEntity(user)));
     }
