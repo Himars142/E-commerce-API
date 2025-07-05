@@ -52,44 +52,43 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void createOrder(String token, CreateOrderRequestDTO request) {
-        logger.info("Attempt to create order");
         UserEntity user = authService.validateTokenAndGetUser(token);
         if (user.getCart() == null || user.getCart().getCartItems().isEmpty()) {
             throw new NotFoundException("User cart is empty or not found.");
         }
         List<CartItemEntity> cartItems = user.getCart().getCartItems();
         productService.validateProductsForOrder(cartItems);
-        logger.info("Attempt to save order userId {}, request: {}, cartItems: {}", user.getId(), request, cartItems);
-        orderRepository.save(orderMapper.createOrder(user, request, cartItems));
+        OrderEntity order = orderRepository.save(orderMapper.createOrder(user, request, cartItems));
         productService.decreaseStockForOrderItems(cartItems);
         cartService.deleteAllByCartId(user.getCart().getId());
-        logger.info("Order created for userId {}", user.getId());
+        logger.info("Order created for userId {}, orderId {}", user.getId(), order.getId());
     }
 
     @Override
     public PageableResponseOrdersDTO getUserOrders(String token, int page, int size) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("Attempt to get userId {} orders", user.getId());
         Page<OrderEntity> orderEntityPage = orderRepository.findByUserId(user.getId(), PageRequest.of(page, size));
-        return orderMapper.createPageableResponseOrdersDTO(orderEntityPage);
+        PageableResponseOrdersDTO response = orderMapper.createPageableResponseOrdersDTO(orderEntityPage);
+        logger.info("User with id {} orders retrieved", user.getId());
+        return response;
     }
 
     @Override
     public OrderEntityDTO getOrderDetails(String token, Long id) {
-        logger.info("Attempt to get orderId: {} details", id);
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order with id:" + id + " not found"));
         UserEntity user = authService.validateTokenAndGetUser(token);
         if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().equals(user)) {
             throw new ForbiddenException("You don`t have access to this order");
         }
-        return orderMapper.toOrderEntityDTO(order);
+        OrderEntityDTO response = orderMapper.toOrderEntityDTO(order);
+        logger.info("Order details retrieved for orderId {}", id);
+        return response;
     }
 
     @Transactional
     @Override
     public void cancelOrder(String token, Long orderId) {
-        logger.info("Attempt to cancel orderId {}", orderId);
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found! ID: " + orderId));
         UserEntity user = authService.validateTokenAndGetUser(token);
@@ -108,15 +107,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PageableResponseOrdersDTO getAllOrders(String token, int page, int size, String status) {
-        logger.info("Attempt to get all orders. Page: {}, size: {}, status: {}", page, size, status);
         authService.checkIsUserAdmin(token);
         Page<OrderEntity> orderEntityPage;
+        String message;
         if (status == null) {
             orderEntityPage = orderRepository.findAll(PageRequest.of(page, size));
+            message = "All orders retrieved without status filter";
         } else {
             orderEntityPage = orderRepository.findByStatus(OrderStatus.valueOf(status), PageRequest.of(page, size));
+            message = "Orders retrieved with status: " + status;
         }
-        return orderMapper.createPageableResponseOrdersDTO(orderEntityPage);
+        PageableResponseOrdersDTO response = orderMapper.createPageableResponseOrdersDTO(orderEntityPage);
+        logger.info(message);
+        return response;
     }
 
     @Transactional
@@ -126,7 +129,6 @@ public class OrderServiceImpl implements OrderService {
             cancelOrder(token, orderId);
             return;
         }
-        logger.info("Attempt to update orderID {} status", orderId);
         authService.checkIsUserAdmin(token);
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found. ID:" + orderId));

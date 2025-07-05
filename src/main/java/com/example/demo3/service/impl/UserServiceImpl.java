@@ -9,8 +9,8 @@ import com.example.demo3.repository.UserRepository;
 import com.example.demo3.service.TokenService;
 import com.example.demo3.service.UserService;
 import jakarta.transaction.Transactional;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +21,7 @@ public class UserServiceImpl implements UserService {
     private final TokenService tokenService;
     private final UserMapper userMapper;
 
-    public static final Logger logger = LogManager.getLogger(UserServiceImpl.class);
+    public static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     public UserServiceImpl(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
@@ -47,12 +47,11 @@ public class UserServiceImpl implements UserService {
         if (!request.getPassword().equals(request.getPasswordConfirmation())) {
             throw new BadRequestException("Password and password confirmation are not equal");
         }
-        logger.info("Creating user with username: {}", request.getUsername());
         String accessToken = tokenService.generateAccessToken(request.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
-        logger.debug("User date before saving: {}", request);
-        userRepository.save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
-        logger.info("User saved with username {}", request.getUsername());
+        UserEntity userEntity = userRepository
+                .save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
+        logger.info("Saved user: {}", userEntity.getId());
         return new JwtResponseDTO(accessToken);
     }
 
@@ -64,6 +63,7 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Incorrect password");
         }
         String accessToken = tokenService.generateAccessToken(user.getUsername());
+        logger.info("Successfully user logged in: {}", user.getId());
         return new JwtResponseDTO(accessToken);
     }
 
@@ -71,14 +71,18 @@ public class UserServiceImpl implements UserService {
     public UserProfileDTO getMyProfile(String token) {
         UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token))
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        return userMapper.toDTO(entity);
+        UserProfileDTO response = userMapper.toDTO(entity);
+        logger.info("Successfully get profile: {}", response.getId());
+        return response;
     }
 
     @Override
     public UserProfileDTO getUserProfile(Long id) {
         UserEntity entity = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User not found. User ID:" + id));
-        return userMapper.toDTO(entity);
+        UserProfileDTO response = userMapper.toDTO(entity);
+        logger.info("Successfully get user profile: {}", response.getId());
+        return response;
     }
 
     @Override
@@ -90,7 +94,8 @@ public class UserServiceImpl implements UserService {
                 throw new BadRequestException("Username must be unique");
             });
         }
-        userRepository.save(userMapper.updateProfile(entity, request));
+        UserEntity user = userRepository.save(userMapper.updateProfile(entity, request));
+        logger.info("Successfully updated user : {}", user.getId());
     }
 
     @Override

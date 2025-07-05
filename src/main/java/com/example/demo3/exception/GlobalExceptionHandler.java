@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<String> handleBaseException(BaseException ex) {
-        logger.error("STATUS CODE:{}, {}", ex.getHttpStatus(), ex.getMessage());
+        logger.warn("STATUS CODE:{}, {}", ex.getHttpStatus(), ex.getMessage());
         return ResponseEntity.status(ex.getHttpStatus()).body(ex.getMessage());
     }
 
@@ -30,6 +30,7 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
+            logger.warn("Validation error on field '{}': {}", fieldName, errorMessage);
             errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
@@ -41,6 +42,7 @@ public class GlobalExceptionHandler {
         ex.getConstraintViolations().forEach((error) -> {
             String fieldName = error.getPropertyPath().toString();
             String errorMessage = error.getMessage();
+            logger.warn("Validation error on param '{}': {}", fieldName, errorMessage);
             errors.put(fieldName, errorMessage);
         });
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);

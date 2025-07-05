@@ -32,32 +32,30 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public PageableResponseCategoryDTO getAllCategories(int page, int size) {
-        logger.info("Attempt to get all categories pageable. Page: {}, size: {}", page, size);
         Page<CategoryEntity> pageable = categoryRepository.findAll(PageRequest.of(page, size));
-        return categoryMapper.createNewPageableResponseCategoryDTO(pageable);
+        PageableResponseCategoryDTO response = categoryMapper.createNewPageableResponseCategoryDTO(pageable);
+        logger.info("Success get all categories pageable. Total elements: {}, total pages: {}",
+                response.getTotalElements(), response.getTotalPages());
+        return response;
     }
 
     @Override
     public CategoryEntity getCategoryById(Long id) {
-        logger.debug("Attempt to get category by id: {}", id);
         return categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found. Category ID:" + id));
     }
 
     @Override
     public void createCategory(String token, CategoryCreateRequestDTO request) {
-        logger.info("Attempt to create category");
         authService.checkIsUserAdmin(token);
-        categoryRepository.save(categoryMapper.requestToEntity(request));
-        logger.info("Success category created");
+        CategoryEntity category = categoryRepository.save(categoryMapper.requestToEntity(request));
+        logger.info("Success category created id:{}", category.getId());
     }
 
     @Override
     public void checkIfCategoryExist(Long id) {
-        logger.debug("Attempt to check if category exist with id:{}", id);
         if (categoryRepository.existsById(id)) {
             throw new NotFoundException("Category not found with id:" + id);
         }
-        logger.debug("Success category exist with id:{}", id);
     }
 }

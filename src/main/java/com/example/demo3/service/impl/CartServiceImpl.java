@@ -48,17 +48,16 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO getCart(String token) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("Attempting to retrieve cart for user ID: {}", user.getId());
         CartEntity cart = getOrCreateCartForUser(user);
+        CartDTO cartDTO = cartMapper.toDTO(cart);
         logger.info("Successfully retrieved cart for user ID: {}. Cart ID: {}", user.getId(), cart.getId());
-        return cartMapper.toDTO(cart);
+        return cartDTO;
     }
 
     @Transactional
     @Override
     public void addItemToCart(String token, Long productId) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("User ID {} attempting to add item ID {} to a cart", user.getId(), productId);
         CartEntity cart = getOrCreateCartForUser(user);
         ProductEntity product = productService.validateAndGetProduct(productId);
         CartItemEntity cartItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId())
@@ -77,7 +76,6 @@ public class CartServiceImpl implements CartService {
             return;
         }
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("User ID {} attempting to update item ID {} in a cart", user.getId(), productId);
         ProductEntity product = productService.validateAndGetProduct(productId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity cartItemEntity = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
@@ -92,7 +90,6 @@ public class CartServiceImpl implements CartService {
     @Override
     public void removeItemFromCart(String token, Long productId) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("User ID {} attempting to remove item ID {} in a cart", user.getId(), productId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity deleteEntity = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
@@ -106,23 +103,21 @@ public class CartServiceImpl implements CartService {
     @Override
     public int clearCart(String token) {
         UserEntity user = authService.validateTokenAndGetUser(token);
-        logger.info("User ID {} attempting clear cart", user.getId());
         CartEntity cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new NotFoundException("User don`t have cart"));
+        int deletedItems = cartItemRepository.deleteAllByCartId(cart.getId());
         logger.info("Successfully clear cart {} for user ID {}", cart.getId(), user.getId());
-        return cartItemRepository.deleteAllByCartId(cart.getId());
+        return deletedItems;
     }
 
     @Transactional
     @Override
     public void deleteAllByCartId(Long id) {
-        logger.debug("Attempt to delete all cart items in cart ID {}", id);
         cartItemRepository.deleteAllByCartId(id);
     }
 
     @Transactional
     private CartEntity getOrCreateCartForUser(UserEntity user) {
-        logger.debug("Attempt to get or create and get cart for user ID {}", user.getId());
         return cartRepository.findByUserId(user.getId())
                 .orElseGet(() -> cartRepository.save(new CartEntity(user)));
     }

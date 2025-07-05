@@ -21,6 +21,15 @@ public class CategoryCreateRequestDTO {
         this.parent = parent;
     }
 
+    @Override
+    public String toString() {
+        return "CategoryCreateRequestDTO{" +
+                "name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", parent=" + parent +
+                '}';
+    }
+
     public String getName() {
         return name;
     }
