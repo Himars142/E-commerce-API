@@ -5,5 +5,5 @@ public interface TokenService {
 
     String generateRefreshToken(String username);
 
-    String getUsernameFromJwt(String token);
+    String getUsernameFromJwt(String token, String requestId);
 }

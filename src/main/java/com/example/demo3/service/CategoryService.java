@@ -5,11 +5,11 @@ import com.example.demo3.dto.PageableResponseCategoryDTO;
 import com.example.demo3.entity.CategoryEntity;
 
 public interface CategoryService {
-    PageableResponseCategoryDTO getAllCategories(int page, int size);
+    PageableResponseCategoryDTO getAllCategories(int page, int size, String userAgent);
 
-    CategoryEntity getCategoryById(Long id);
+    CategoryEntity getCategoryById(Long id, String requestId);
 
-    void createCategory(String token, CategoryCreateRequestDTO request);
+    void createCategory(String token, CategoryCreateRequestDTO request, String userAgent);
 
-    void checkIfCategoryExist(Long id);
+    void checkIfCategoryExist(Long id, String requestId);
 }

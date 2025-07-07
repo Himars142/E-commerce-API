@@ -13,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
@@ -31,31 +33,36 @@ public class CategoryServiceImpl implements CategoryService {
 
 
     @Override
-    public PageableResponseCategoryDTO getAllCategories(int page, int size) {
+    public PageableResponseCategoryDTO getAllCategories(int page, int size, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to get all categories pageable request id: {}, user agent: {}, page {}, size: {}",
+                requestId, userAgent, page, size);
         Page<CategoryEntity> pageable = categoryRepository.findAll(PageRequest.of(page, size));
         PageableResponseCategoryDTO response = categoryMapper.createNewPageableResponseCategoryDTO(pageable);
-        logger.info("Success get all categories pageable. Total elements: {}, total pages: {}",
-                response.getTotalElements(), response.getTotalPages());
+        logger.info("Success get all categories pageable. Total elements: {}, total pages: {}, request id: {}",
+                response.getTotalElements(), response.getTotalPages(), requestId);
         return response;
     }
 
     @Override
-    public CategoryEntity getCategoryById(Long id) {
+    public CategoryEntity getCategoryById(Long id, String requestId) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Category not found. Category ID:" + id));
+                .orElseThrow(() -> new NotFoundException("Category not found. Category ID:" + id + ". Request id:" + requestId));
     }
 
     @Override
-    public void createCategory(String token, CategoryCreateRequestDTO request) {
-        authService.checkIsUserAdmin(token);
+    public void createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to create category request id: {}, user agent: {}, category: {}", requestId, userAgent, request.toString());
+        authService.checkIsUserAdmin(token, requestId);
         CategoryEntity category = categoryRepository.save(categoryMapper.requestToEntity(request));
-        logger.info("Success category created id:{}", category.getId());
+        logger.info("Success category created request id: {}, category id:{}", requestId, category.getId());
     }
 
     @Override
-    public void checkIfCategoryExist(Long id) {
+    public void checkIfCategoryExist(Long id, String requestId) {
         if (categoryRepository.existsById(id)) {
-            throw new NotFoundException("Category not found with id:" + id);
+            throw new NotFoundException("Category not found with id:" + id + ". Request id:" + requestId);
         }
     }
 }

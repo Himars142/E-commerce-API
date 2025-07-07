@@ -20,22 +20,22 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void validateToken(String token) {
+    public void validateToken(String token, String requestId) {
         if (!jwtUtil.validateJwtToken(token)) {
-            throw new UnauthorizedException("Invalid token!");
+            throw new UnauthorizedException("Invalid token! Request id: " + requestId);
         }
     }
 
     @Override
-    public UserEntity validateTokenAndGetUser(String token) {
-        validateToken(token);
-        return userService.findByUserName(jwtUtil.getUsernameFromJwt(token));
+    public UserEntity validateTokenAndGetUser(String token, String requestId) {
+        validateToken(token, requestId);
+        return userService.findByUserName(jwtUtil.getUsernameFromJwt(token), requestId);
     }
 
     @Override
-    public void checkIsUserAdmin(String token) {
-        if (!validateTokenAndGetUser(token).getRole().equals(UserRole.ROLE_ADMIN)) {
-            throw new ForbiddenException("You must be admin");
+    public void checkIsUserAdmin(String token, String requestId) {
+        if (!validateTokenAndGetUser(token, requestId).getRole().equals(UserRole.ROLE_ADMIN)) {
+            throw new ForbiddenException("You must be admin! Request id: " + requestId);
         }
     }
 }

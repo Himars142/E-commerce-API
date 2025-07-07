@@ -24,9 +24,9 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public String getUsernameFromJwt(String token) {
+    public String getUsernameFromJwt(String token, String requestId) {
         if (!jwtUtil.validateJwtToken(token)) {
-            throw new UnauthorizedException("Invalid token");
+            throw new UnauthorizedException("Invalid token. Request id: " + requestId);
         }
         return jwtUtil.getUsernameFromJwt(token);
     }

@@ -23,14 +23,16 @@ public class CategoryController {
 
     @GetMapping
     public ResponseEntity<?> getAllCategories(@RequestParam(defaultValue = "0") @PositiveOrZero int page,
+                                              @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                               @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
-        return ResponseEntity.ok(categoryService.getAllCategories(page, size));
+        return ResponseEntity.ok(categoryService.getAllCategories(page, size, userAgent));
     }
 
     @PostMapping
     public ResponseEntity<?> createCategory(@RequestHeader("Authorization") String token,
+                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                             @Valid @RequestBody CategoryCreateRequestDTO request) {
-        categoryService.createCategory(token, request);
+        categoryService.createCategory(token, request, userAgent);
         return ResponseEntity.status(HttpStatus.CREATED).body("Category created");
     }
 }

@@ -25,42 +25,48 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getProductById(@PathVariable @Positive Long id) {
-        ProductBasicDTO product = productService.getProductById(id);
+    public ResponseEntity<?> getProductById(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                            @PathVariable @Positive Long id) {
+        ProductBasicDTO product = productService.getProductById(id, userAgent);
         return ResponseEntity.ok(product);
     }
 
     @PostMapping
     public ResponseEntity<?> addProduct(@RequestHeader("Authorization") String token,
+                                        @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                         @Valid @RequestBody ProductRequestDTO product) {
-        productService.addProduct(token, product);
+        productService.addProduct(token, product, userAgent);
         return ResponseEntity.status(HttpStatus.CREATED).body("Product added successfully!");
     }
 
     @GetMapping
     public ResponseEntity<?> getAllProducts(@RequestParam(defaultValue = "0") @PositiveOrZero int page,
+                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                             @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
-        return ResponseEntity.ok(productService.getAllProducts(page, size));
+        return ResponseEntity.ok(productService.getAllProducts(page, size, userAgent));
     }
 
     @PutMapping
     public ResponseEntity<?> updateProduct(@RequestHeader("Authorization") String token,
+                                           @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @Valid @RequestBody UpdateProductRequestDTO productBasicDTO) {
-        productService.updateProduct(token, productBasicDTO);
+        productService.updateProduct(token, productBasicDTO, userAgent);
         return ResponseEntity.ok().body("Product updated successfully!");
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> deleteProduct(@RequestHeader("Authorization") String token,
+                                           @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @PathVariable @Positive Long id) {
-        productService.changeIsActive(token, id);
+        productService.changeIsActive(token, id, userAgent);
         return ResponseEntity.ok("Product status updated!");
     }
 
     @GetMapping("/category/{categoryId}")
-    public ResponseEntity<?> getProductsByCategory(@PathVariable @Positive Long categoryId,
+    public ResponseEntity<?> getProductsByCategory(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                                   @PathVariable @Positive Long categoryId,
                                                    @RequestParam(defaultValue = "0") @PositiveOrZero int page,
                                                    @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
-        return ResponseEntity.ok(productService.getAllProductByCategoryId(categoryId, page, size));
+        return ResponseEntity.ok(productService.getAllProductByCategoryId(categoryId, page, size, userAgent));
     }
 }

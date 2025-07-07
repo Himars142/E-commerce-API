@@ -8,25 +8,25 @@ import com.example.demo3.entity.ProductEntity;
 import java.util.List;
 
 public interface ProductService {
-    ProductBasicDTO getProductById(Long id);
+    ProductBasicDTO getProductById(Long id, String userAgent);
 
-    PageableResponseProducts getAllProducts(int page, int size);
+    PageableResponseProducts getAllProducts(int page, int size, String userAgent);
 
-    void addProduct(String token, ProductRequestDTO product);
+    void addProduct(String token, ProductRequestDTO product, String userAgent);
 
-    void updateProduct(String token, UpdateProductRequestDTO product);
+    void updateProduct(String token, UpdateProductRequestDTO product, String userAgent);
 
-    void changeIsActive(String token, Long id);
+    void changeIsActive(String token, Long id, String userAgent);
 
-    ProductEntity validateAndGetProduct(Long productId);
+    ProductEntity validateAndGetProduct(Long productId, String requestId);
 
-    ProductEntity getProduct(Long productId);
+    ProductEntity getProduct(Long productId, String requestId);
 
-    PageableResponseGetProductsByCategory getAllProductByCategoryId(Long categoryId, int page, int size);
+    PageableResponseGetProductsByCategory getAllProductByCategoryId(Long categoryId, int page, int size, String userAgent);
 
     void increaseStockForOrderItems(List<OrderItemEntity> orderItems);
 
     void decreaseStockForOrderItems(List<CartItemEntity> cartItems);
 
-    void validateProductsForOrder(List<CartItemEntity> cartItems);
+    void validateProductsForOrder(List<CartItemEntity> cartItems, String requestId);
 }

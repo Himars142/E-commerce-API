@@ -8,6 +8,13 @@ public class UserLoginDTO {
     @NotBlank
     private String password;
 
+    @Override
+    public String toString() {
+        return "UserLoginDTO{" +
+                "username='" + username + '\'' +
+                '}';
+    }
+
     public String getUsername() {
         return username;
     }

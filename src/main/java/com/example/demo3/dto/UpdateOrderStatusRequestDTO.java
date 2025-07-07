@@ -8,4 +8,11 @@ public class UpdateOrderStatusRequestDTO {
     public OrderStatus getStatus() {
         return status;
     }
+
+    @Override
+    public String toString() {
+        return "UpdateOrderStatusRequestDTO{" +
+                "status=" + status +
+                '}';
+    }
 }

@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -41,89 +42,108 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductBasicDTO getProductById(Long id) {
-        ProductBasicDTO response = productMapper.toDTO(getProduct(id));
-        logger.info("Success to get product with id {}", response.getId());
+    public ProductBasicDTO getProductById(Long id, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to get product by id. Request id: {}, user agent: {}, product id: {}.",
+                requestId, userAgent, id);
+        ProductBasicDTO response = productMapper.toDTO(getProduct(id, requestId));
+        logger.info("Success to get product with id {}, request id: {}", response.getId(), requestId);
         return response;
     }
 
     @Override
-    public PageableResponseProducts getAllProducts(int page, int size) {
+    public PageableResponseProducts getAllProducts(int page, int size, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to get all products. Request id: {}, user agent: {}, page: {}, size: {}.",
+                requestId, userAgent, page, size);
         Page<ProductEntity> pageable = productsRepository.findAll(PageRequest.of(page, size));
         PageableResponseProducts response = productMapper.createPageableResponseProducts(pageable);
-        logger.info("Success attempt to get all products pageable. Page: {}, size: {}", page, size);
+        logger.info("Success attempt to get all products pageable. Request id: {}, total elements: {}, total pages: {}",
+                requestId, response.getTotalElements(), response.getTotalPages());
         return response;
     }
 
     @Transactional
     @Override
-    public void addProduct(String token, ProductRequestDTO product) {
-        authService.checkIsUserAdmin(token);
-        CategoryEntity category = categoryService.getCategoryById(product.getCategoryId());
+    public void addProduct(String token, ProductRequestDTO product, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to add product. Request id: {}, user agent: {}, product: {}.",
+                requestId, userAgent, product.toString());
+        authService.checkIsUserAdmin(token, requestId);
+        CategoryEntity category = categoryService.getCategoryById(product.getCategoryId(), requestId);
         productsRepository.findBySku(product.getSku())
                 .ifPresent(sku -> {
-                    throw new BadRequestException("Sku must be unique");
+                    throw new BadRequestException("Sku must be unique. Request id: " + requestId);
                 });
         ProductEntity productEntity = productsRepository.save(productMapper.createProduct(product, category));
-        logger.info("Success product created id: {}", productEntity.getId());
+        logger.info("Success product created id: {}, request id: {}", productEntity.getId(), requestId);
     }
 
     @Transactional
     @Override
-    public void updateProduct(String token, UpdateProductRequestDTO request) {
-        authService.checkIsUserAdmin(token);
+    public void updateProduct(String token, UpdateProductRequestDTO request, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to update product. Request id: {}, user agent: {}, product: {}.",
+                requestId, userAgent, request.toString());
+        authService.checkIsUserAdmin(token, requestId);
         ProductEntity product = productsRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found with ID:" + request.getId()));
         if (request.getSku() != null && !request.getSku().equals(product.getSku())) {
             productsRepository.findBySku(product.getSku())
                     .ifPresent(sku -> {
-                        throw new BadRequestException("Sku must be unique");
+                        throw new BadRequestException("Sku must be unique. Request id: " + requestId);
                     });
         }
         if (request.getCategoryId() != null) {
-            CategoryEntity category = categoryService.getCategoryById(request.getCategoryId());
+            CategoryEntity category = categoryService.getCategoryById(request.getCategoryId(), requestId);
             productMapper.updateProductCategory(category, product);
         }
         productsRepository.save(productMapper.updateProduct(request, product));
-        logger.info("Success product updated productId:{}", product.getId());
+        logger.info("Success product updated productId:{}, request id: {}", product.getId(), requestId);
     }
 
     @Transactional
     @Override
-    public void changeIsActive(String token, Long id) {
-        authService.checkIsUserAdmin(token);
+    public void changeIsActive(String token, Long id, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to change is active product. Request id: {}, user agent: {}, product id: {}.",
+                requestId, userAgent, id);
+        authService.checkIsUserAdmin(token, requestId);
         ProductEntity product = productsRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Product not found with ID:" + id));
+                .orElseThrow(() -> new NotFoundException("Product not found with ID:" + id + ". Request id: " + requestId));
         product.setIsActive(!product.getIsActive());
         productsRepository.save(product);
-        logger.info("Success change productId: {} active is {}", id, product.getIsActive());
+        logger.info("Success change productId: {} active is {}, request id: {}", id, product.getIsActive(), requestId);
     }
 
     @Override
-    public ProductEntity validateAndGetProduct(Long productId) {
-        ProductEntity product = getProduct(productId);
+    public ProductEntity validateAndGetProduct(Long productId, String requestId) {
+        ProductEntity product = getProduct(productId, requestId);
         if (!product.getIsActive()) {
-            throw new BadRequestException("Product " + product.getName() + " is disabled");
+            throw new BadRequestException("Product " + product.getName() + " is disabled. Request id: " + requestId);
         }
         if (product.getStockQuantity() == 0) {
-            changeIsActive(productId);
-            throw new BadRequestException("Product disabled");
+            changeIsActive(productId, requestId);
+            throw new BadRequestException("Product disabled. Product id:" + productId + ". Request id: " + requestId);
         }
         return product;
     }
 
     @Override
-    public ProductEntity getProduct(Long productId) {
+    public ProductEntity getProduct(Long productId, String requestId) {
         return productsRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Product with this id don`t exist. ID:" + productId));
+                .orElseThrow(() -> new NotFoundException("Product with this id don`t exist. ID:" + productId + ". Request id: " + requestId));
     }
 
     @Override
-    public PageableResponseGetProductsByCategory getAllProductByCategoryId(Long categoryId, int page, int size) {
+    public PageableResponseGetProductsByCategory getAllProductByCategoryId(Long categoryId, int page, int size, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to change is active product. Request id: {}, user agent: {}, page: {}, size: {}.",
+                requestId, userAgent, page, size);
         Page<ProductEntity> productPage = productsRepository.findByCategoryId(categoryId, PageRequest.of(page, size));
         PageableResponseGetProductsByCategory response = productMapper.createPageableResponseGetProductsByCategory(productPage);
-        logger.info("Success get pageable response get all products by categoryId: {}. Page: {}, size: {}",
-                categoryId, page, size);
+        logger.info("Success get pageable response get all products by categoryId: {}. Request id: {}, Total pages: {}, total elements: {}",
+                categoryId, requestId, response.getTotalPages(), response.getTotalPages());
         return response;
     }
 
@@ -148,22 +168,25 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void validateProductsForOrder(List<CartItemEntity> cartItems) {
+    public void validateProductsForOrder(List<CartItemEntity> cartItems, String requestId) {
         for (CartItemEntity item : cartItems) {
             ProductEntity product = productsRepository.findById(item.getProduct().getId())
-                    .orElseThrow(() -> new NotFoundException("Product with ID " + item.getProduct().getId() + " not found."));
+                    .orElseThrow(() -> new NotFoundException("Product with ID " + item.getProduct().getId() + " not found. Request id: " + requestId));
             if (!product.getIsActive()) {
-                throw new BadRequestException("Product " + product.getName() + " is disabled");
+                throw new BadRequestException("Product " + product.getName() + " is disabled. Request id: " + requestId);
             }
             if (item.getQuantity() > product.getStockQuantity()) {
-                throw new BadRequestException("Not enough '" + product.getName() + "' in stock. Available: " + product.getStockQuantity() + ", requested: " + item.getQuantity());
+                throw new BadRequestException("Not enough '" + product.getName()
+                        + "' in stock. Available: " + product.getStockQuantity()
+                        + ", requested: " + item.getQuantity()
+                        + ". Request id: " + requestId);
             }
         }
     }
 
     @Transactional
-    private void changeIsActive(Long id) {
-        ProductEntity product = getProduct(id);
+    private void changeIsActive(Long id, String requestId) {
+        ProductEntity product = getProduct(id, requestId);
         product.setIsActive(!product.getIsActive());
         productsRepository.save(product);
         logger.info("Success change is active for productId: {} to {}", id, product.getIsActive());

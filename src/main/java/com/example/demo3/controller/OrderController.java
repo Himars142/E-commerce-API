@@ -25,44 +25,50 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestHeader("Authorization") String token,
+                                         @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                          @Valid @RequestBody CreateOrderRequestDTO request) {
-        orderService.createOrder(token, request);
+        orderService.createOrder(token, request, userAgent);
         return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully");
     }
 
     @GetMapping
     public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") String token,
+                                           @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @RequestParam(defaultValue = "0") @PositiveOrZero int page,
                                            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
-        return ResponseEntity.ok(orderService.getUserOrders(token, page, size));
+        return ResponseEntity.ok(orderService.getUserOrders(token, page, size, userAgent));
     }
 
     @GetMapping("/{orderId}")
     public ResponseEntity<?> getOrderDetails(@RequestHeader("Authorization") String token,
+                                             @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                              @PathVariable @Positive Long orderId) {
-        return ResponseEntity.ok(orderService.getOrderDetails(token, orderId));
+        return ResponseEntity.ok(orderService.getOrderDetails(token, orderId, userAgent));
     }
 
     @PutMapping("/{orderId}/cancel")
     public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") String token,
+                                         @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                          @PathVariable @Positive Long orderId) {
-        orderService.cancelOrder(token, orderId);
+        orderService.cancelOrder(token, orderId, userAgent);
         return ResponseEntity.ok("Order cancelled");
     }
 
     @GetMapping("/admin/all")
     public ResponseEntity<?> getAllOrders(@RequestHeader("Authorization") String token,
+                                          @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                           @RequestParam(defaultValue = "0") @PositiveOrZero int page,
                                           @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
                                           @RequestParam(required = false) String status) {
-        return ResponseEntity.ok(orderService.getAllOrders(token, page, size, status));
+        return ResponseEntity.ok(orderService.getAllOrders(token, page, size, status, userAgent));
     }
 
     @PutMapping("/admin/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(@RequestHeader("Authorization") String token,
+                                               @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                                @PathVariable @Positive Long orderId,
                                                @RequestBody UpdateOrderStatusRequestDTO request) {
-        orderService.updateOrderStatus(token, orderId, request);
+        orderService.updateOrderStatus(token, orderId, request, userAgent);
         return ResponseEntity.ok("Order status updated");
     }
 }

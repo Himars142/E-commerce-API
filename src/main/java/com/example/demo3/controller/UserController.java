@@ -21,29 +21,34 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegistrationRequestDTO request) {
-        return ResponseEntity.ok(userService.registerUser(request));
+    public ResponseEntity<?> registerUser(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                          @Valid @RequestBody UserRegistrationRequestDTO request) {
+        return ResponseEntity.ok(userService.registerUser(request, userAgent));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@Valid @RequestBody UserLoginDTO request) {
-        return ResponseEntity.ok(userService.loginUser(request));
+    public ResponseEntity<?> loginUser(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                       @Valid @RequestBody UserLoginDTO request) {
+        return ResponseEntity.ok(userService.loginUser(request, userAgent));
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<?> getMyProfile(@RequestHeader("Authorization") String token) {
-        return ResponseEntity.ok(userService.getMyProfile(token));
+    public ResponseEntity<?> getMyProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                          @RequestHeader("Authorization") String token) {
+        return ResponseEntity.ok(userService.getMyProfile(token, userAgent));
     }
 
     @GetMapping("/profile/{id}")
-    public ResponseEntity<?> getUserProfile(@PathVariable @Positive Long id) {
-        return ResponseEntity.ok().body(userService.getUserProfile(id));
+    public ResponseEntity<?> getUserProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                            @PathVariable @Positive Long id) {
+        return ResponseEntity.ok().body(userService.getUserProfile(id, userAgent));
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<?> updateUserProfile(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> updateUserProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                               @RequestHeader("Authorization") String token,
                                                @Valid @RequestBody UserUpdateRequestDTO request) {
-        userService.updateUserProfile(token, request);
+        userService.updateUserProfile(token, request, userAgent);
         return ResponseEntity.ok("Profile updated");
     }
 }

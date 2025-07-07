@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
@@ -35,63 +37,78 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public JwtResponseDTO registerUser(UserRegistrationRequestDTO request) {
+    public JwtResponseDTO registerUser(UserRegistrationRequestDTO request, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to register user. Request id: {}, user agent: {}, user: {}.",
+                requestId, userAgent, request.toString());
         userRepository.findByUsername(request.getUsername())
                 .ifPresent(user -> {
-                    throw new BadRequestException("User with this username already exist!");
+                    throw new BadRequestException("User with this username already exist! Request id:" + requestId);
                 });
         userRepository.findByEmail(request.getEmail())
                 .ifPresent(email -> {
-                    throw new BadRequestException("User with this email already exist!");
+                    throw new BadRequestException("User with this email already exist! Request id: " + requestId);
                 });
         if (!request.getPassword().equals(request.getPasswordConfirmation())) {
-            throw new BadRequestException("Password and password confirmation are not equal");
+            throw new BadRequestException("Password and password confirmation are not equal. Request id:" + requestId);
         }
         String accessToken = tokenService.generateAccessToken(request.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
         UserEntity userEntity = userRepository
                 .save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
-        logger.info("Saved user: {}", userEntity.getId());
+        logger.info("Success! Request id: {}. Saved user: {}", requestId, userEntity.getId());
         return new JwtResponseDTO(accessToken);
     }
 
     @Override
-    public JwtResponseDTO loginUser(UserLoginDTO request) {
+    public JwtResponseDTO loginUser(UserLoginDTO request, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to login user. Request id: {}, user agent: {}, user: {}.",
+                requestId, userAgent, request.toString());
         UserEntity user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new NotFoundException("User with this username not exist"));
+                .orElseThrow(() -> new NotFoundException("User with this username not exist. Request id: " + requestId));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadRequestException("Incorrect password");
+            throw new BadRequestException("Incorrect password. Request id: " + requestId);
         }
         String accessToken = tokenService.generateAccessToken(user.getUsername());
-        logger.info("Successfully user logged in: {}", user.getId());
+        logger.info("Successfully user logged in: {}, Request id: {}", user.getId(), requestId);
         return new JwtResponseDTO(accessToken);
     }
 
     @Override
-    public UserProfileDTO getMyProfile(String token) {
-        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token))
-                .orElseThrow(() -> new NotFoundException("User not found"));
+    public UserProfileDTO getMyProfile(String token, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("User attempt to get own profile. Request id: {}, user agent: {}",
+                requestId, userAgent);
+        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
+                .orElseThrow(() -> new NotFoundException("User not found. Request id: " + requestId));
         UserProfileDTO response = userMapper.toDTO(entity);
-        logger.info("Successfully get profile: {}", response.getId());
+        logger.info("Successfully get profile: {}. Request id; {}", response.getId(), requestId);
         return response;
     }
 
     @Override
-    public UserProfileDTO getUserProfile(Long id) {
+    public UserProfileDTO getUserProfile(Long id, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("User attempt to get profile. Request id: {}, user agent: {}, profile id: {}",
+                requestId, userAgent, id);
         UserEntity entity = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("User not found. User ID:" + id));
+                .orElseThrow(() -> new NotFoundException("User not found. User ID:" + id + ". Request id: " + requestId));
         UserProfileDTO response = userMapper.toDTO(entity);
-        logger.info("Successfully get user profile: {}", response.getId());
+        logger.info("Successfully get user profile: {}. Request id: {}", response.getId(), requestId);
         return response;
     }
 
     @Override
-    public void updateUserProfile(String token, UserUpdateRequestDTO request) {
-        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token))
-                .orElseThrow(() -> new NotFoundException("User not found"));
+    public void updateUserProfile(String token, UserUpdateRequestDTO request, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to update profile. Request id: {}, user agent: {}",
+                requestId, userAgent);
+        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
+                .orElseThrow(() -> new NotFoundException("User not found. Request id: " + requestId));
         if (request.getUsername() != null) {
             userRepository.findByUsername(request.getUsername()).ifPresent(username -> {
-                throw new BadRequestException("Username must be unique");
+                throw new BadRequestException("Username must be unique. Request id: " + requestId);
             });
         }
         UserEntity user = userRepository.save(userMapper.updateProfile(entity, request));
@@ -99,8 +116,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserEntity findByUserName(String username) {
+    public UserEntity findByUserName(String username, String requestId) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new NotFoundException("User with this username: " + username + " not found"));
+                .orElseThrow(() -> new NotFoundException("User with this username: " + username + " not found" + ". Request id; " + requestId));
     }
 }

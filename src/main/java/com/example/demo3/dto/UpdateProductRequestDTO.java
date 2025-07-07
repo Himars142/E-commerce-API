@@ -39,6 +39,19 @@ public class UpdateProductRequestDTO {
         this.categoryId = categoryId;
     }
 
+    @Override
+    public String toString() {
+        return "UpdateProductRequestDTO{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", price=" + price +
+                ", stockQuantity=" + stockQuantity +
+                ", sku='" + sku + '\'' +
+                ", categoryId=" + categoryId +
+                '}';
+    }
+
     public Long getId() {
         return id;
     }

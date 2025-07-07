@@ -33,6 +33,14 @@ public class UserRegistrationRequestDTO {
         this.phone = phone;
     }
 
+    @Override
+    public String toString() {
+        return "UserRegistrationRequestDTO{" +
+                "username='" + username + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+
     public String getUsername() {
         return username;
     }
