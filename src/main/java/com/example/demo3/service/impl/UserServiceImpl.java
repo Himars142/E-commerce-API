@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = userRepository
                 .save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
         logger.info("Success! Request id: {}. Saved user: {}", requestId, userEntity.getId());
-        return new JwtResponseDTO(accessToken);
+        return new JwtResponseDTO(accessToken, refreshToken);
     }
 
     @Override
@@ -71,8 +71,9 @@ public class UserServiceImpl implements UserService {
             throw new BadRequestException("Incorrect password. Request id: " + requestId);
         }
         String accessToken = tokenService.generateAccessToken(user.getUsername());
+        String refreshToken = tokenService.generateRefreshToken(request.getUsername());
         logger.info("Successfully user logged in: {}, Request id: {}", user.getId(), requestId);
-        return new JwtResponseDTO(accessToken);
+        return new JwtResponseDTO(accessToken, refreshToken);
     }
 
     @Override

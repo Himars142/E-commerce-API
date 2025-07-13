@@ -61,7 +61,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void checkIfCategoryExist(Long id, String requestId) {
-        if (categoryRepository.existsById(id)) {
+        if (!categoryRepository.existsById(id)) {
             throw new NotFoundException("Category not found with id:" + id + ". Request id:" + requestId);
         }
     }

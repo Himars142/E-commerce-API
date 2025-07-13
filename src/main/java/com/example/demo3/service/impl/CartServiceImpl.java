@@ -108,7 +108,8 @@ public class CartServiceImpl implements CartService {
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity deleteEntity = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
-                .orElseThrow(() -> new NotFoundException("No product with the ID:" + productId + " in the cart! Request id: " + requestId));
+                .orElseThrow(() -> new NotFoundException("No product with the ID:" + productId
+                        + " in the cart! Request id: " + requestId));
         cartItemRepository.delete(deleteEntity);
         logger.info("Successfully removed product ID {} in cart {} for user ID {}, request id: {}.",
                 productId, cart.getId(), user.getId(), requestId);

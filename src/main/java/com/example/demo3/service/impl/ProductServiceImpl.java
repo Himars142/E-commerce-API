@@ -110,7 +110,8 @@ public class ProductServiceImpl implements ProductService {
                 requestId, userAgent, id);
         authService.checkIsUserAdmin(token, requestId);
         ProductEntity product = productsRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Product not found with ID:" + id + ". Request id: " + requestId));
+                .orElseThrow(() -> new NotFoundException("Product not found with ID:" + id
+                        + ". Request id: " + requestId));
         product.setIsActive(!product.getIsActive());
         productsRepository.save(product);
         logger.info("Success change productId: {} active is {}, request id: {}", id, product.getIsActive(), requestId);
@@ -132,7 +133,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductEntity getProduct(Long productId, String requestId) {
         return productsRepository.findById(productId)
-                .orElseThrow(() -> new NotFoundException("Product with this id don`t exist. ID:" + productId + ". Request id: " + requestId));
+                .orElseThrow(() -> new NotFoundException("Product with this id don`t exist. ID:" + productId
+                        + ". Request id: " + requestId));
     }
 
     @Override
@@ -171,9 +173,11 @@ public class ProductServiceImpl implements ProductService {
     public void validateProductsForOrder(List<CartItemEntity> cartItems, String requestId) {
         for (CartItemEntity item : cartItems) {
             ProductEntity product = productsRepository.findById(item.getProduct().getId())
-                    .orElseThrow(() -> new NotFoundException("Product with ID " + item.getProduct().getId() + " not found. Request id: " + requestId));
+                    .orElseThrow(() -> new NotFoundException("Product with ID " + item.getProduct().getId()
+                            + " not found. Request id: " + requestId));
             if (!product.getIsActive()) {
-                throw new BadRequestException("Product " + product.getName() + " is disabled. Request id: " + requestId);
+                throw new BadRequestException("Product " + product.getName()
+                        + " is disabled. Request id: " + requestId);
             }
             if (item.getQuantity() > product.getStockQuantity()) {
                 throw new BadRequestException("Not enough '" + product.getName()

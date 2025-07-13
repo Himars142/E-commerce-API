@@ -9,6 +9,10 @@ public class UpdateOrderStatusRequestDTO {
         return status;
     }
 
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
     @Override
     public String toString() {
         return "UpdateOrderStatusRequestDTO{" +
