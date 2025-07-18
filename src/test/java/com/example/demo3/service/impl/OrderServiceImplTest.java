@@ -270,13 +270,13 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
-            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.empty());
+            when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of());
 
             assertThrows(NotFoundException.class, () -> underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT));
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository);
             inOrder.verify(orderRepository).findById(1L);
-            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+            inOrder.verify(orderItemRepository).findByOrderId(ORDER.getId());
         }
 
         @Test
@@ -286,14 +286,14 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
-            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.of(List.of(ORDER_ITEM)));
+            when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of(ORDER_ITEM));
             when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
 
             underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
             inOrder.verify(orderRepository).findById(1L);
-            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+            inOrder.verify(orderItemRepository).findByOrderId(ORDER.getId());
             inOrder.verify(productService).increaseStockForOrderItems(List.of(ORDER_ITEM));
         }
 
@@ -305,14 +305,14 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
-            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.of(List.of(ORDER_ITEM)));
+            when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of(ORDER_ITEM));
             when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
 
             underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
             inOrder.verify(orderRepository).findById(1L);
-            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+            inOrder.verify(orderItemRepository).findByOrderId(ORDER.getId());
             inOrder.verify(productService).increaseStockForOrderItems(List.of(ORDER_ITEM));
         }
     }

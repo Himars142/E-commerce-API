@@ -107,8 +107,10 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getStatus().equals(OrderStatus.PENDING)) {
             throw new BadRequestException("Order is not pending! Order status:" + order.getStatus() + ". Request id: " + requestId);
         }
-        List<OrderItemEntity> orderItems = orderItemRepository.findByOrder_Id(orderId)
-                .orElseThrow(() -> new NotFoundException("No items in order id: " + orderId + ". Request id: " + requestId));
+        List<OrderItemEntity> orderItems = orderItemRepository.findByOrderId(orderId);
+        if (orderItems.isEmpty()) {
+            throw new NotFoundException("No items in order id: " + orderId + ". Request id: " + requestId);
+        }
         productService.increaseStockForOrderItems(orderItems);
         orderRepository.save(orderMapper.cancelOrder(order));
         logger.info("Success. OrderId {} canceled, request id: {}", orderId, requestId);

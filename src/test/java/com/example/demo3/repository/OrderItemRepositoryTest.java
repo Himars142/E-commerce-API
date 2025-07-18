@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrderItemRepositoryTest extends BaseRepositoryTest<OrderItemRepository> {
@@ -31,14 +31,14 @@ class OrderItemRepositoryTest extends BaseRepositoryTest<OrderItemRepository> {
             OrderItemEntity orderItemEntity2 = TestDataFactory.createAndPersistOrderItem(entityManager, order, product);
             OrderItemEntity orderItemEntity3 = TestDataFactory.createAndPersistOrderItem(entityManager, order, product);
 
-            underTest.findByOrder_Id(order.getId());
+            underTest.findByOrderId(order.getId());
 
-            Optional<List<OrderItemEntity>> result = underTest.findByOrder_Id(order.getId());
+            List<OrderItemEntity> result = underTest.findByOrderId(order.getId());
 
-            assertTrue(result.isPresent());
-            assertTrue(result.get().contains(orderItemEntity1));
-            assertTrue(result.get().contains(orderItemEntity2));
-            assertTrue(result.get().contains(orderItemEntity3));
+            assertFalse(result.isEmpty());
+            assertTrue(result.contains(orderItemEntity1));
+            assertTrue(result.contains(orderItemEntity2));
+            assertTrue(result.contains(orderItemEntity3));
         }
 
         @Test
@@ -47,10 +47,9 @@ class OrderItemRepositoryTest extends BaseRepositoryTest<OrderItemRepository> {
             UserEntity user = TestDataFactory.createAndPersistUser(entityManager);
             OrderEntity order = TestDataFactory.createAndPersistOrder(entityManager, user);
 
-            Optional<List<OrderItemEntity>> result = underTest.findByOrder_Id(order.getId());
+            List<OrderItemEntity> result = underTest.findByOrderId(order.getId());
 
-            assertTrue(result.isPresent());
-            assertTrue(result.get().isEmpty());
+            assertTrue(result.isEmpty());
         }
     }
 }
