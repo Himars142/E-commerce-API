@@ -5,10 +5,7 @@ import com.example.demo3.dto.ProductRequestDTO;
 import com.example.demo3.dto.UpdateProductRequestDTO;
 import com.example.demo3.service.ProductService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -32,7 +29,7 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<?> addProduct(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> addProduct(@RequestHeader("Authorization") @NotEmpty String token,
                                         @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                         @Valid @RequestBody ProductRequestDTO product) {
         productService.addProduct(token, product, userAgent);
@@ -47,7 +44,7 @@ public class ProductController {
     }
 
     @PutMapping
-    public ResponseEntity<?> updateProduct(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> updateProduct(@RequestHeader("Authorization") @NotEmpty String token,
                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @Valid @RequestBody UpdateProductRequestDTO productBasicDTO) {
         productService.updateProduct(token, productBasicDTO, userAgent);
@@ -55,7 +52,7 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> deleteProduct(@RequestHeader("Authorization") @NotEmpty String token,
                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @PathVariable @Positive Long id) {
         productService.changeIsActive(token, id, userAgent);

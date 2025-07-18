@@ -3,10 +3,13 @@ package com.example.demo3.service.impl;
 import com.example.demo3.exception.UnauthorizedException;
 import com.example.demo3.security.JwtUtil;
 import com.example.demo3.testutil.BaseServiceTest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,54 +22,69 @@ class TokenServiceImplTest extends BaseServiceTest {
     @InjectMocks
     private TokenServiceImpl underTest;
 
-    @Test
-    void generateAccessToken() {
-        String token = "valid-token";
-        String username = "username";
+    @Nested
+    @DisplayName("Generate access token tests")
+    class GenerateAccessToken {
 
-        when(jwtUtil.generateAccessToken(username)).thenReturn(token);
+        @Test
+        @DisplayName("Should generate access token")
+        void generateAccessToken() {
+            when(jwtUtil.generateAccessToken(USERNAME)).thenReturn(ACCESS_TOKEN);
 
-        underTest.generateAccessToken(username);
+            String result = underTest.generateAccessToken(USERNAME);
 
-        verify(jwtUtil).generateAccessToken(username);
+            assertThat(result).isNotBlank().isEqualTo(ACCESS_TOKEN);
+
+            verify(jwtUtil).generateAccessToken(USERNAME);
+        }
     }
 
-    @Test
-    void generateRefreshToken() {
-        String token = "valid-token";
-        String username = "username";
+    @Nested
+    @DisplayName("Generate refresh token tests")
+    class GenerateRefreshToken {
 
-        when(jwtUtil.generateRefreshToken(username)).thenReturn(token);
+        @Test
+        @DisplayName("Should generate refresh token")
+        void generateRefreshToken() {
+            when(jwtUtil.generateRefreshToken(USERNAME)).thenReturn(REFRESH_TOKEN);
 
-        underTest.generateRefreshToken(username);
+            String result = underTest.generateRefreshToken(USERNAME);
 
-        verify(jwtUtil).generateRefreshToken(username);
+            assertThat(result).isNotBlank().isEqualTo(REFRESH_TOKEN);
+
+            verify(jwtUtil).generateRefreshToken(USERNAME);
+        }
     }
 
-    @Test
-    void getUsernameFromJwt_ShouldThrowUnauthorizedException() {
-        String token = "valid-token";
-        String requestId = "request-id";
+    @Nested
+    @DisplayName("Get username from jwt tests")
+    class GetUsernameFromJwt {
 
-        when(jwtUtil.validateJwtToken(token)).thenReturn(false);
+        @Test
+        @DisplayName("Should throw unauthorized exception")
+        void getUsernameFromJwt_ShouldThrowUnauthorizedException() {
+            when(jwtUtil.validateJwtToken(TOKEN)).thenReturn(false);
 
-        assertThrows(UnauthorizedException.class, () -> underTest.getUsernameFromJwt(token, requestId));
+            UnauthorizedException exception = assertThrows(UnauthorizedException.class,
+                    () -> underTest.getUsernameFromJwt(TOKEN, requestId));
 
-        verify(jwtUtil).validateJwtToken(token);
-    }
+            assertThat(exception.getMessage()).contains(requestId);
 
-    @Test
-    void getUsernameFromJwt() {
-        String token = "valid-token";
-        String requestId = "request-id";
-        String username = "username";
+            verify(jwtUtil).validateJwtToken(TOKEN);
+        }
 
-        when(jwtUtil.validateJwtToken(token)).thenReturn(true);
-        when(jwtUtil.getUsernameFromJwt(token)).thenReturn(username);
+        @Test
+        @DisplayName("Should return username")
+        void getUsernameFromJwt() {
+            when(jwtUtil.validateJwtToken(TOKEN)).thenReturn(true);
+            when(jwtUtil.getUsernameFromJwt(TOKEN)).thenReturn(USERNAME);
 
-        underTest.getUsernameFromJwt(token, requestId);
+            String result = underTest.getUsernameFromJwt(TOKEN, requestId);
 
-        verify(jwtUtil).validateJwtToken(token);
-        verify(jwtUtil).getUsernameFromJwt(token);
+            assertThat(result).isNotBlank().isEqualTo(USERNAME);
+
+            verify(jwtUtil).validateJwtToken(TOKEN);
+            verify(jwtUtil).getUsernameFromJwt(TOKEN);
+        }
     }
 }

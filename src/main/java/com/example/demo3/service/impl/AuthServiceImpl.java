@@ -2,6 +2,7 @@ package com.example.demo3.service.impl;
 
 import com.example.demo3.entity.UserEntity;
 import com.example.demo3.entity.UserRole;
+import com.example.demo3.exception.BadRequestException;
 import com.example.demo3.exception.ForbiddenException;
 import com.example.demo3.exception.UnauthorizedException;
 import com.example.demo3.security.JwtUtil;
@@ -34,7 +35,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void checkIsUserAdmin(String token, String requestId) {
-        if (!validateTokenAndGetUser(token, requestId).getRole().equals(UserRole.ROLE_ADMIN)) {
+        UserEntity user = validateTokenAndGetUser(token, requestId);
+        checkIsUserAdmin(user, requestId);
+    }
+
+    @Override
+    public void checkIsUserAdmin(UserEntity user, String requestId) {
+        if (user.getRole() == null) {
+            throw new BadRequestException("Role is null! Request id:" + requestId);
+        }
+        if (!user.getRole().equals(UserRole.ROLE_ADMIN)) {
             throw new ForbiddenException("You must be admin! Request id: " + requestId);
         }
     }

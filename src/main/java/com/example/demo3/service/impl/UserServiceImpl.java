@@ -60,6 +60,7 @@ public class UserServiceImpl implements UserService {
         return new JwtResponseDTO(accessToken, refreshToken);
     }
 
+    @Transactional
     @Override
     public JwtResponseDTO loginUser(UserLoginDTO request, String userAgent) {
         String requestId = UUID.randomUUID().toString();
@@ -72,6 +73,8 @@ public class UserServiceImpl implements UserService {
         }
         String accessToken = tokenService.generateAccessToken(user.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
+        user.setRefreshToken(refreshToken);
+        userRepository.save(user);
         logger.info("Successfully user logged in: {}, Request id: {}", user.getId(), requestId);
         return new JwtResponseDTO(accessToken, refreshToken);
     }
@@ -107,7 +110,7 @@ public class UserServiceImpl implements UserService {
                 requestId, userAgent);
         UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
                 .orElseThrow(() -> new NotFoundException("User not found. Request id: " + requestId));
-        if (request.getUsername() != null) {
+        if (request.getUsername() != null && !request.getUsername().equals(entity.getUsername())) {
             userRepository.findByUsername(request.getUsername()).ifPresent(username -> {
                 throw new BadRequestException("Username must be unique. Request id: " + requestId);
             });

@@ -8,7 +8,11 @@ import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
 @ActiveProfiles("test")
-public abstract class BaseRepositoryTest {
+public abstract class BaseRepositoryTest<T> {
+
+    @Autowired
+    protected T underTest;
+
     @Autowired
     protected TestEntityManager entityManager;
 

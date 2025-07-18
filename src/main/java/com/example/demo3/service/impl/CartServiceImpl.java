@@ -32,6 +32,8 @@ public class CartServiceImpl implements CartService {
 
     private static final Logger logger = LoggerFactory.getLogger(CartServiceImpl.class);
 
+    public static final int DEFAULT_ITEM_QUANTITY = 1;
+
     public CartServiceImpl(CartRepository cartRepository,
                            CartItemRepository cartItemRepository,
                            CartMapper cartMapper,
@@ -50,7 +52,7 @@ public class CartServiceImpl implements CartService {
     @Override
     public CartDTO getCart(String token, String userAgent) {
         String requestId = UUID.randomUUID().toString();
-        logger.info("Attempt to get a car request id:{}, user agent: {}", requestId, userAgent);
+        logger.info("Attempt to get a cart request id:{}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartDTO cartDTO = cartMapper.toDTO(cart);
@@ -70,7 +72,7 @@ public class CartServiceImpl implements CartService {
         ProductEntity product = productService.validateAndGetProduct(productId, requestId);
         CartItemEntity cartItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId())
                 .map(item -> cartItemMapper.changeQuantity(item, item.getQuantity() + 1))
-                .orElseGet(() -> cartItemMapper.createNewCartItemEntity(cart, product, 1));
+                .orElseGet(() -> cartItemMapper.createNewCartItemEntity(cart, product, DEFAULT_ITEM_QUANTITY));
         cartItemRepository.save(cartItem);
         logger.info("Successfully added product request id: {}, product ID {} (quantity: {}) to cart ID {} for user ID {}. Cart item ID: {}, request id: {}",
                 requestId, productId, cartItem.getQuantity(), cart.getId(), user.getId(), cartItem.getId(), requestId);
@@ -79,11 +81,6 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public void updateCartItem(String token, Long productId, UpdateCartItemRequestDTO request, String userAgent) {
-        if (request.getQuantity() <= 0) {
-            logger.info("Redirecting request from update item to remove item from cart");
-            removeItemFromCart(token, productId, userAgent);
-            return;
-        }
         String requestId = UUID.randomUUID().toString();
         logger.info("Attempt to update cart item request id: {}, product id: {}, quantity: {}, user agent: {}",
                 requestId, productId, request.getQuantity(), userAgent);

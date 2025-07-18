@@ -5,6 +5,7 @@ import com.example.demo3.dto.UserRegistrationRequestDTO;
 import com.example.demo3.dto.UserUpdateRequestDTO;
 import com.example.demo3.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -34,7 +35,7 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<?> getMyProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
-                                          @RequestHeader("Authorization") String token) {
+                                          @RequestHeader("Authorization") @NotEmpty String token) {
         return ResponseEntity.ok(userService.getMyProfile(token, userAgent));
     }
 
@@ -46,7 +47,7 @@ public class UserController {
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateUserProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
-                                               @RequestHeader("Authorization") String token,
+                                               @RequestHeader("Authorization") @NotEmpty String token,
                                                @Valid @RequestBody UserUpdateRequestDTO request) {
         userService.updateUserProfile(token, request, userAgent);
         return ResponseEntity.ok("Profile updated");

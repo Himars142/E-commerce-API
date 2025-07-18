@@ -12,7 +12,8 @@ import com.example.demo3.mapper.OrderMapper;
 import com.example.demo3.repository.OrderItemRepository;
 import com.example.demo3.repository.OrderRepository;
 import com.example.demo3.testutil.BaseServiceTest;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.data.domain.Page;
@@ -21,507 +22,458 @@ import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class OrderServiceImplTest extends BaseServiceTest {
+
     @Mock
     private OrderRepository orderRepository;
-
     @Mock
     private ProductServiceImpl productService;
-
     @Mock
     private OrderMapper orderMapper;
-
     @Mock
     private AuthServiceImpl authService;
-
     @Mock
     private CartServiceImpl cartService;
-
     @Mock
     private OrderItemRepository orderItemRepository;
 
     @InjectMocks
     private OrderServiceImpl underTest;
 
-    @Test
-    void createOrder_ShouldCreateOrder() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
-        ProductEntity product = new ProductEntity();
-        CartEntity cart = new CartEntity();
-        CartItemEntity cartItem = new CartItemEntity();
-        cartItem.setCart(cart);
-        UserEntity user = new UserEntity();
-        user.setCart(cart);
+    private static final UserEntity USER = new UserEntity();
+    private static final Page<OrderEntity> PAGE_EMPTY = Page.empty();
+    private static final OrderEntity ORDER = new OrderEntity();
+    private static final OrderEntity ANOTHER_USER_ORDER = new OrderEntity();
 
-        cartItem.setProduct(product);
-        cart.setUser(user);
-        cart.setCartItems(List.of(cartItem));
-        OrderEntity order = new OrderEntity();
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderMapper.createOrder(user, request, List.of(cartItem))).thenReturn(order);
-        when(orderRepository.save(order)).thenReturn(order);
-
-        underTest.createOrder(token, request, userAgent);
-
-        verify(orderMapper).createOrder(user, request, List.of(cartItem));
-        verify(orderRepository).save(order);
-        verify(productService).decreaseStockForOrderItems(List.of(cartItem));
-        verify(cartService).deleteAllByCartId(user.getCart().getId());
+    @BeforeAll
+    static void setUp() {
+        USER.setId(1L);
+        ORDER.setUser(USER);
+        ORDER.setId(1L);
+        ANOTHER_USER_ORDER.setUser(new UserEntity());
+        ANOTHER_USER_ORDER.setId(2L);
     }
 
-    @Test
-    void createOrder_ShouldThrowNotFoundException() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
-        UserEntity user = new UserEntity();
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-
-        assertThrows(NotFoundException.class, () -> underTest.createOrder(token, request, userAgent));
+    @BeforeEach
+    void clearRole() {
+        USER.setRole(UserRole.ROLE_CUSTOMER);
     }
 
-    @Test
-    void createOrder_ShouldThrowNotFoundExceptionBecauseCartIsEmpty() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        CreateOrderRequestDTO request = new CreateOrderRequestDTO();
-        CartEntity cart = new CartEntity();
-        cart.setCartItems(List.of());
-        UserEntity user = new UserEntity();
-        user.setCart(cart);
-        cart.setUser(user);
+    @Nested
+    @DisplayName("Create order tests")
+    class CreateOrder {
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
+        private static final CreateOrderRequestDTO REQUEST = new CreateOrderRequestDTO();
+        private static final ProductEntity PRODUCT = new ProductEntity();
+        private static final CartEntity CART = new CartEntity();
+        private static final CartItemEntity CART_ITEM = new CartItemEntity();
 
-        assertThrows(NotFoundException.class, () -> underTest.createOrder(token, request, userAgent));
+        @BeforeAll
+        static void setUp() {
+            USER.setCart(CART);
+            CART.setUser(USER);
+            CART_ITEM.setCart(CART);
+            CART_ITEM.setProduct(PRODUCT);
+        }
+
+        @Test
+        @DisplayName("Should create order")
+        void createOrder_ShouldCreateOrder() {
+            CART.setCartItems(List.of(CART_ITEM));
+
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderMapper.createOrder(USER, REQUEST, List.of(CART_ITEM))).thenReturn(ORDER);
+            when(orderRepository.save(ORDER)).thenReturn(ORDER);
+
+            underTest.createOrder(TOKEN, REQUEST, USER_AGENT);
+
+            InOrder inOrder = inOrder(orderMapper, orderRepository, productService, cartService);
+            inOrder.verify(orderMapper).createOrder(USER, REQUEST, List.of(CART_ITEM));
+            inOrder.verify(orderRepository).save(ORDER);
+            inOrder.verify(productService).decreaseStockForOrderItems(List.of(CART_ITEM));
+            inOrder.verify(cartService).deleteAllByCartId(USER.getCart().getId());
+        }
+
+        @Test
+        @DisplayName("Should throw not found exception")
+        void createOrder_ShouldThrowNotFoundException() {
+            CART.setCartItems(List.of());
+
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+
+            assertThrows(NotFoundException.class, () -> underTest.createOrder(TOKEN, REQUEST, USER_AGENT));
+
+            verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+        }
+
+        @Test
+        @DisplayName("Should throw not found exception because cart is empty")
+        void createOrder_WhenCartIsEmpty_ShouldThrowNotFoundException() {
+            CART.setCartItems(List.of());
+
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+
+            NotFoundException exception = assertThrows(NotFoundException.class,
+                    () -> underTest.createOrder(TOKEN, REQUEST, USER_AGENT));
+
+            assertThat(exception).isNotNull();
+
+            verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+        }
     }
 
-    @Test
-    void getUserOrders() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        int page = 0;
-        int size = 10;
+    @Nested
+    @DisplayName("Get user orders tests")
+    class GetUserOrders {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        Page<OrderEntity> orderEntityPage = Page.empty();
-        PageableResponseOrdersDTO response = new PageableResponseOrdersDTO();
+        @Test
+        @DisplayName("should return users orders")
+        void getUserOrders() {
+            PageableResponseOrdersDTO response = new PageableResponseOrdersDTO();
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderRepository.findByUserId(user.getId(), PageRequest.of(page, size))).thenReturn(orderEntityPage);
-        when(orderMapper.createPageableResponseOrdersDTO(orderEntityPage)).thenReturn(response);
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderRepository.findByUserId(USER.getId(), PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
+                    .thenReturn(PAGE_EMPTY);
+            when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(response);
 
-        underTest.getUserOrders(token, page, size, userAgent);
+            PageableResponseOrdersDTO result = underTest
+                    .getUserOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, USER_AGENT);
 
-        verify(orderRepository).findByUserId(user.getId(), PageRequest.of(page, size));
-        verify(orderMapper).createPageableResponseOrdersDTO(orderEntityPage);
+            assertThat(result).isNotNull().isSameAs(response);
+
+            InOrder inOrder = inOrder(orderRepository, orderMapper);
+            inOrder.verify(orderRepository).findByUserId(USER.getId(), PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE));
+            inOrder.verify(orderMapper).createPageableResponseOrdersDTO(PAGE_EMPTY);
+        }
     }
 
-    @Test
-    void getOrderDetails_ShouldGetOrderDetails() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Get order details tests")
+    class GetOrderDetails {
 
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        OrderEntityDTO response = new OrderEntityDTO();
+        private static final OrderEntityDTO RESPONSE = new OrderEntityDTO();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderMapper.toOrderEntityDTO(order)).thenReturn(response);
+        @Test
+        @DisplayName("Should get order details")
+        void getOrderDetails_ShouldGetOrderDetails() {
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderMapper.toOrderEntityDTO(ORDER)).thenReturn(RESPONSE);
 
-        underTest.getOrderDetails(token, order.getId(), userAgent);
+            OrderEntityDTO result = underTest.getOrderDetails(TOKEN, ORDER.getId(), USER_AGENT);
 
-        verify(orderRepository).findById(1L);
-        verify(orderMapper).toOrderEntityDTO(order);
+            assertThat(result).isNotNull().isSameAs(RESPONSE);
+
+            InOrder inOrder = inOrder(orderRepository, orderMapper);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderMapper).toOrderEntityDTO(ORDER);
+        }
+
+        @Test
+        @DisplayName("Should get order details case user admin")
+        void getOrderDetails_ShouldGetOrderDetailsCaseUserAdmin() {
+            USER.setRole(UserRole.ROLE_ADMIN);
+
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderMapper.toOrderEntityDTO(ORDER)).thenReturn(RESPONSE);
+
+            OrderEntityDTO result = underTest.getOrderDetails(TOKEN, ORDER.getId(), USER_AGENT);
+
+            assertThat(result).isNotNull().isSameAs(RESPONSE);
+
+            InOrder inOrder = inOrder(orderRepository, orderMapper);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderMapper).toOrderEntityDTO(ORDER);
+        }
+
+        @Test
+        @DisplayName("Should throw forbidden exception")
+        void getOrderDetails_ShouldThrowForbiddenException() {
+            when(orderRepository.findById(2L)).thenReturn(Optional.of(ANOTHER_USER_ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+
+            assertThrows(ForbiddenException.class, () -> underTest.getOrderDetails(TOKEN, ANOTHER_USER_ORDER.getId(), USER_AGENT));
+
+            verify(orderRepository).findById(2L);
+        }
+
+        @Test
+        @DisplayName("Should throw not found exception")
+        void getOrderDetails_ShouldThrowNotFoundException() {
+            when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () -> underTest.getOrderDetails(TOKEN, 1L, USER_AGENT));
+
+            verify(orderRepository).findById(1L);
+        }
     }
 
-    @Test
-    void getOrderDetails_ShouldGetOrderDetailsCaseUserAdmin() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Cancel order tests")
+    class CancelOrder {
 
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_ADMIN);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        OrderEntityDTO response = new OrderEntityDTO();
+        private static final OrderEntity ORDER_CANCELED = new OrderEntity();
+        private static final OrderItemEntity ORDER_ITEM = new OrderItemEntity();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderMapper.toOrderEntityDTO(order)).thenReturn(response);
+        @BeforeAll
+        static void setUp() {
+            ORDER_CANCELED.setId(1L);
+            ORDER_CANCELED.setStatus(OrderStatus.CANCELLED);
+            ORDER_ITEM.setOrder(ORDER);
+        }
 
-        underTest.getOrderDetails(token, order.getId(), userAgent);
+        @Test
+        @DisplayName("Should throw not found exception order not found")
+        void cancelOrder_ShouldThrowNotFoundExceptionBecauseOrder() {
+            when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-        verify(orderRepository).findById(1L);
-        verify(orderMapper).toOrderEntityDTO(order);
+            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(TOKEN, 1L, USER_AGENT));
+
+            verify(orderRepository).findById(1L);
+        }
+
+        @Test
+        @DisplayName("Should throw forbidden exception")
+        void cancelOrder_ShouldThrowForbiddenException() {
+            when(orderRepository.findById(2L)).thenReturn(Optional.of(ANOTHER_USER_ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+
+            assertThrows(ForbiddenException.class, () -> underTest.cancelOrder(TOKEN, ANOTHER_USER_ORDER.getId(), USER_AGENT));
+
+            verify(orderRepository).findById(2L);
+        }
+
+        @Test
+        @DisplayName("Should throw bad request exception")
+        void cancelOrder_ShouldThrowBadRequestException() {
+            ORDER.setStatus(OrderStatus.CANCELLED);
+
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+
+            assertThrows(BadRequestException.class, () -> underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT));
+
+            verify(orderRepository).findById(1L);
+        }
+
+        @Test
+        @DisplayName("Should throw not found exception cart is empty")
+        void cancelOrder_ShouldThrowNotFoundExceptionBecauseCartItems() {
+            ORDER.setStatus(OrderStatus.PENDING);
+
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.empty());
+
+            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT));
+
+            InOrder inOrder = inOrder(orderRepository, orderItemRepository);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+        }
+
+        @Test
+        @DisplayName("Should cancel order")
+        void cancelOrder_ShouldCancelOrder() {
+            ORDER.setStatus(OrderStatus.PENDING);
+
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.of(List.of(ORDER_ITEM)));
+            when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
+
+            underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
+
+            InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+            inOrder.verify(productService).increaseStockForOrderItems(List.of(ORDER_ITEM));
+        }
+
+        @Test
+        @DisplayName("Should cancel order case user admin")
+        void cancelOrder_ShouldCancelOrderCaseUserAdmin() {
+            USER.setRole(UserRole.ROLE_ADMIN);
+            ORDER.setStatus(OrderStatus.PENDING);
+
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(orderItemRepository.findByOrder_Id(ORDER.getId())).thenReturn(Optional.of(List.of(ORDER_ITEM)));
+            when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
+
+            underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
+
+            InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderItemRepository).findByOrder_Id(ORDER.getId());
+            inOrder.verify(productService).increaseStockForOrderItems(List.of(ORDER_ITEM));
+        }
     }
 
-    @Test
-    void getOrderDetails_ShouldThrowForbiddenException() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Get all orders tests")
+    class GetAllOrders {
 
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(new UserEntity());
-        order.setId(1L);
+        private static final PageableResponseOrdersDTO RESPONSE = new PageableResponseOrdersDTO();
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
+        @Test
+        @DisplayName("Should return orders without status")
+        void getAllOrders_ShouldReturnOrdersWithoutStatus() {
+            when(orderRepository.findAll(PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE))).thenReturn(PAGE_EMPTY);
+            when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(RESPONSE);
 
-        assertThrows(ForbiddenException.class, () -> underTest.getOrderDetails(token, order.getId(), userAgent));
+            PageableResponseOrdersDTO result = underTest
+                    .getAllOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, null, USER_AGENT);
 
-        verify(orderRepository).findById(1L);
+            assertThat(result).isNotNull().isSameAs(RESPONSE);
+
+            InOrder inOrder = inOrder(authService, orderRepository, orderMapper);
+            inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
+            inOrder.verify(orderRepository).findAll(PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE));
+            inOrder.verify(orderMapper).createPageableResponseOrdersDTO(PAGE_EMPTY);
+        }
+
+        @Test
+        @DisplayName("Should return orders with status")
+        void getAllOrders_ShouldReturnOrdersWithStatus() {
+            String status = "PENDING";
+
+            when(orderRepository.findByStatus(OrderStatus.valueOf(status),
+                    PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
+                    .thenReturn(PAGE_EMPTY);
+            when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(RESPONSE);
+
+            PageableResponseOrdersDTO result = underTest
+                    .getAllOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, status, USER_AGENT);
+
+            assertThat(result).isNotNull().isSameAs(RESPONSE);
+
+            InOrder inOrder = inOrder(authService, orderRepository, orderMapper);
+            inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
+            inOrder.verify(orderRepository).findByStatus(OrderStatus.valueOf(status),
+                    PageRequest.of(DEFAULT_PAGE, DEFAULT_PAGE_SIZE));
+            inOrder.verify(orderMapper).createPageableResponseOrdersDTO(PAGE_EMPTY);
+        }
     }
 
-    @Test
-    void getOrderDetails_ShouldThrowNotFoundException() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Update order status tests")
+    class UpdateOrderStatus {
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> underTest.getOrderDetails(token, 1L, userAgent));
+        private static final UpdateOrderStatusRequestDTO REQUEST = new UpdateOrderStatusRequestDTO();
 
-        verify(orderRepository).findById(1L);
-    }
+        @Test
+        @DisplayName("Should redirect to cancel order and throw not found error")
+        void updateOrderStatus_ShouldRedirectToCancelOrderAndThrowNotFoundError() {
+            REQUEST.setStatus(OrderStatus.CANCELLED);
 
-    @Test
-    void cancelOrder_ShouldThrowNotFoundExceptionBecauseOrder() {
-        String token = "valid-token";
-        String userAgent = "testing";
+            assertThrows(NotFoundException.class,
+                    () -> underTest.updateOrderStatus(TOKEN, ORDER.getId(), REQUEST, USER_AGENT));
+        }
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> underTest.cancelOrder(token, 1L, userAgent));
+        @Test
+        @DisplayName("Should throw not found error order not found")
+        void updateOrderStatus_ShouldThrowNotFoundErrorOrderNotFound() {
+            REQUEST.setStatus(OrderStatus.PENDING);
 
-        verify(orderRepository).findById(1L);
-    }
-
-    @Test
-    void cancelOrder_ShouldThrowForbiddenException() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(new UserEntity());
-        order.setId(1L);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-
-        assertThrows(ForbiddenException.class, () -> underTest.cancelOrder(token, order.getId(), userAgent));
-
-        verify(orderRepository).findById(1L);
-    }
-
-    @Test
-    void cancelOrder_ShouldThrowBadRequestException() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        order.setStatus(OrderStatus.CANCELLED);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-
-        assertThrows(BadRequestException.class, () -> underTest.cancelOrder(token, order.getId(), userAgent));
-
-        verify(orderRepository).findById(1L);
-    }
-
-    @Test
-    void cancelOrder_ShouldThrowNotFoundExceptionBecauseCartItems() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderItemRepository.findByOrder_Id(order.getId())).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> underTest.cancelOrder(token, order.getId(), userAgent));
-
-        verify(orderRepository).findById(1L);
-        verify(orderItemRepository).findByOrder_Id(order.getId());
-    }
-
-    @Test
-    void cancelOrder_ShouldCancelOrder() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_CUSTOMER);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
-        OrderItemEntity orderItem = new OrderItemEntity();
-        orderItem.setOrder(order);
-
-        OrderEntity orderCanceled = new OrderEntity();
-        orderCanceled.setId(1L);
-        orderCanceled.setStatus(OrderStatus.CANCELLED);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderItemRepository.findByOrder_Id(order.getId())).thenReturn(Optional.of(List.of(orderItem)));
-        when(orderMapper.cancelOrder(order)).thenReturn(orderCanceled);
-
-        underTest.cancelOrder(token, order.getId(), userAgent);
-
-        verify(orderRepository).findById(1L);
-        verify(orderItemRepository).findByOrder_Id(order.getId());
-        verify(productService).increaseStockForOrderItems(List.of(orderItem));
-    }
-
-    @Test
-    void cancelOrder_ShouldCancelOrderCaseUserAdmin() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setRole(UserRole.ROLE_ADMIN);
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
-        OrderItemEntity orderItem = new OrderItemEntity();
-        orderItem.setOrder(order);
-
-        OrderEntity orderCanceled = new OrderEntity();
-        orderCanceled.setId(1L);
-        orderCanceled.setStatus(OrderStatus.CANCELLED);
+            when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(orderItemRepository.findByOrder_Id(order.getId())).thenReturn(Optional.of(List.of(orderItem)));
-        when(orderMapper.cancelOrder(order)).thenReturn(orderCanceled);
+            assertThrows(NotFoundException.class, () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
 
-        underTest.cancelOrder(token, order.getId(), userAgent);
+            verify(orderRepository).findById(1L);
+        }
 
-        verify(orderRepository).findById(1L);
-        verify(orderItemRepository).findByOrder_Id(order.getId());
-        verify(productService).increaseStockForOrderItems(List.of(orderItem));
-    }
+        @Test
+        @DisplayName("Should throw bad request exception")
+        void updateOrderStatus_ShouldThrowBadRequestException() {
+            REQUEST.setStatus(OrderStatus.PENDING);
+            ORDER.setStatus(OrderStatus.PENDING);
 
-    @Test
-    void getAllOrders_ShouldReturnOrdersWithoutStatus() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        int page = 0;
-        int size = 10;
-        String status = null;
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-        Page<OrderEntity> orderEntityPage = Page.empty();
-        PageableResponseOrdersDTO response = new PageableResponseOrdersDTO();
+            assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
 
-        when(orderRepository.findAll(PageRequest.of(page, size))).thenReturn(orderEntityPage);
-        when(orderMapper.createPageableResponseOrdersDTO(orderEntityPage)).thenReturn(response);
+            verify(orderRepository).findById(1L);
+        }
 
-        underTest.getAllOrders(token, page, size, status, userAgent);
+        @Test
+        @DisplayName("Should update order to confirmed")
+        void updateOrderStatus_ShouldUpdateOrderToConfirmed() {
+            REQUEST.setStatus(OrderStatus.CONFIRMED);
+            ORDER.setStatus(OrderStatus.PENDING);
 
-        verify(authService).checkIsUserAdmin(eq(token), anyString());
-        verify(orderRepository).findAll(PageRequest.of(page, size));
-        verify(orderMapper).createPageableResponseOrdersDTO(orderEntityPage);
-    }
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-    @Test
-    void getAllOrders_ShouldReturnOrdersWithStatus() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        int page = 0;
-        int size = 10;
-        String status = "PENDING";
+            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
 
-        Page<OrderEntity> orderEntityPage = Page.empty();
-        PageableResponseOrdersDTO response = new PageableResponseOrdersDTO();
+            InOrder inOrder = inOrder(orderRepository, orderRepository);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderRepository).save(ORDER);
+        }
 
-        when(orderRepository.findByStatus(OrderStatus.valueOf(status), PageRequest.of(page, size))).thenReturn(orderEntityPage);
-        when(orderMapper.createPageableResponseOrdersDTO(orderEntityPage)).thenReturn(response);
+        @Test
+        @DisplayName("Should update order to shipped")
+        void updateOrderStatus_ShouldUpdateOrderToShipped() {
+            REQUEST.setStatus(OrderStatus.SHIPPED);
+            ORDER.setStatus(OrderStatus.CONFIRMED);
 
-        underTest.getAllOrders(token, page, size, status, userAgent);
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-        verify(authService).checkIsUserAdmin(eq(token), anyString());
-        verify(orderRepository).findByStatus(OrderStatus.valueOf(status), PageRequest.of(page, size));
-        verify(orderMapper).createPageableResponseOrdersDTO(orderEntityPage);
-    }
+            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
 
-    @Test
-    void updateOrderStatus_ShouldRedirectToCancelOrderAndThrowNotFoundError() {
-        String token = "valid-token";
-        String userAgent = "testing";
+            InOrder inOrder = inOrder(orderRepository, orderRepository);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderRepository).save(ORDER);
+        }
 
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
+        @Test
+        @DisplayName("Should update order to delivered")
+        void updateOrderStatus_ShouldUpdateOrderToDelivered() {
+            REQUEST.setStatus(OrderStatus.DELIVERED);
+            ORDER.setStatus(OrderStatus.SHIPPED);
 
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.CANCELLED);
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-        assertThrows(NotFoundException.class,
-                () -> underTest.updateOrderStatus(token, order.getId(), request, userAgent));
-    }
+            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
 
-    @Test
-    void updateOrderStatus_ShouldThrowNotFoundErrorOrderNotFound() {
-        String token = "valid-token";
-        String userAgent = "testing";
+            InOrder inOrder = inOrder(orderRepository, orderRepository);
+            inOrder.verify(orderRepository).findById(1L);
+            inOrder.verify(orderRepository).save(ORDER);
+        }
 
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.PENDING);
+        @Test
+        @DisplayName("Should throw bad request exception invalid status transition")
+        void updateOrderStatus_ShouldThrowBadRequestExceptionInvalidStatusTransition() {
+            REQUEST.setStatus(OrderStatus.DELIVERED);
+            ORDER.setStatus(OrderStatus.PENDING);
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-        assertThrows(NotFoundException.class, () -> underTest.updateOrderStatus(token, 1L, request, userAgent));
+            assertThrows(BadRequestException.class,
+                    () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
 
-        verify(orderRepository).findById(1L);
-    }
+            verify(orderRepository).findById(1L);
+        }
 
-    @Test
-    void updateOrderStatus_ShouldThrowBadRequestException() {
-        String token = "valid-token";
-        String userAgent = "testing";
+        @Test
+        @DisplayName("Should throw bad request exception invalid status transition case with confirmed in request")
+        void updateOrderStatus_WhenInvalidTransition_ShouldThrowBadRequestException() {
+            REQUEST.setStatus(OrderStatus.DELIVERED);
+            ORDER.setStatus(OrderStatus.CONFIRMED);
 
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.PENDING);
+            when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
+            assertThrows(BadRequestException.class,
+                    () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
 
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(token, 1L, request, userAgent));
-
-        verify(orderRepository).findById(1L);
-    }
-
-    @Test
-    void updateOrderStatus_ShouldUpdateOrderToConfirmed() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.CONFIRMED);
-
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        underTest.updateOrderStatus(token, 1L, request, userAgent);
-
-        verify(orderRepository).findById(1L);
-        verify(orderRepository).save(order);
-    }
-
-    @Test
-    void updateOrderStatus_ShouldUpdateOrderToShipped() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.SHIPPED);
-
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.CONFIRMED);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        underTest.updateOrderStatus(token, 1L, request, userAgent);
-
-        verify(orderRepository).findById(1L);
-        verify(orderRepository).save(order);
-    }
-
-    @Test
-    void updateOrderStatus_ShouldUpdateOrderToDelivered() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.DELIVERED);
-
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.SHIPPED);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        underTest.updateOrderStatus(token, 1L, request, userAgent);
-
-        verify(orderRepository).findById(1L);
-        verify(orderRepository).save(order);
-    }
-
-    @Test
-    void updateOrderStatus_ShouldThrowBadRequestExceptionInvalidStatusTransition() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.DELIVERED);
-
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.PENDING);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(token, 1L, request, userAgent));
-
-        verify(orderRepository).findById(1L);
-    }
-
-    @Test
-    void updateOrderStatus_ShouldThrowBadRequestExceptionInvalidStatusTransitionCaseWithConfirmedInRequest() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UpdateOrderStatusRequestDTO request = new UpdateOrderStatusRequestDTO();
-        request.setStatus(OrderStatus.DELIVERED);
-
-        OrderEntity order = new OrderEntity();
-        order.setId(1L);
-        order.setStatus(OrderStatus.CONFIRMED);
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(token, 1L, request, userAgent));
-
-        verify(orderRepository).findById(1L);
+            verify(orderRepository).findById(1L);
+        }
     }
 }

@@ -2,12 +2,10 @@ package com.example.demo3.controller;
 
 import com.example.demo3.dto.CreateOrderRequestDTO;
 import com.example.demo3.dto.UpdateOrderStatusRequestDTO;
+import com.example.demo3.entity.OrderStatus;
 import com.example.demo3.service.OrderService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -24,7 +22,7 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createOrder(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> createOrder(@RequestHeader("Authorization") @NotEmpty String token,
                                          @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                          @Valid @RequestBody CreateOrderRequestDTO request) {
         orderService.createOrder(token, request, userAgent);
@@ -32,7 +30,7 @@ public class OrderController {
     }
 
     @GetMapping
-    public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") @NotEmpty String token,
                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                            @RequestParam(defaultValue = "0") @PositiveOrZero int page,
                                            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
@@ -40,14 +38,14 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<?> getOrderDetails(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> getOrderDetails(@RequestHeader("Authorization") @NotEmpty String token,
                                              @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                              @PathVariable @Positive Long orderId) {
         return ResponseEntity.ok(orderService.getOrderDetails(token, orderId, userAgent));
     }
 
     @PutMapping("/{orderId}/cancel")
-    public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") @NotEmpty String token,
                                          @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                          @PathVariable @Positive Long orderId) {
         orderService.cancelOrder(token, orderId, userAgent);
@@ -55,7 +53,7 @@ public class OrderController {
     }
 
     @GetMapping("/admin/all")
-    public ResponseEntity<?> getAllOrders(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> getAllOrders(@RequestHeader("Authorization") @NotEmpty String token,
                                           @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                           @RequestParam(defaultValue = "0") @PositiveOrZero int page,
                                           @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size,
@@ -64,11 +62,15 @@ public class OrderController {
     }
 
     @PutMapping("/admin/{orderId}/status")
-    public ResponseEntity<?> updateOrderStatus(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> updateOrderStatus(@RequestHeader("Authorization") @NotEmpty String token,
                                                @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                                @PathVariable @Positive Long orderId,
                                                @RequestBody UpdateOrderStatusRequestDTO request) {
-        orderService.updateOrderStatus(token, orderId, request, userAgent);
+        if (request.getStatus().equals(OrderStatus.CANCELLED)) {
+            orderService.cancelOrder(token, orderId, userAgent);
+        } else {
+            orderService.updateOrderStatus(token, orderId, request, userAgent);
+        }
         return ResponseEntity.ok("Order status updated");
     }
 }

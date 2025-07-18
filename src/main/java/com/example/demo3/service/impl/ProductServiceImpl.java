@@ -89,7 +89,7 @@ public class ProductServiceImpl implements ProductService {
         ProductEntity product = productsRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found with ID:" + request.getId()));
         if (request.getSku() != null && !request.getSku().equals(product.getSku())) {
-            productsRepository.findBySku(product.getSku())
+            productsRepository.findBySku(request.getSku())
                     .ifPresent(sku -> {
                         throw new BadRequestException("Sku must be unique. Request id: " + requestId);
                     });
@@ -124,7 +124,7 @@ public class ProductServiceImpl implements ProductService {
             throw new BadRequestException("Product " + product.getName() + " is disabled. Request id: " + requestId);
         }
         if (product.getStockQuantity() == 0) {
-            changeIsActive(productId, requestId);
+            changeIsActive(product, requestId);
             throw new BadRequestException("Product disabled. Product id:" + productId + ". Request id: " + requestId);
         }
         return product;
@@ -189,10 +189,10 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Transactional
-    private void changeIsActive(Long id, String requestId) {
-        ProductEntity product = getProduct(id, requestId);
+    private void changeIsActive(ProductEntity product, String requestId) {
         product.setIsActive(!product.getIsActive());
         productsRepository.save(product);
-        logger.info("Success change is active for productId: {} to {}", id, product.getIsActive());
+        logger.info("Success change is active for productId: {} to {}. Request id: {}",
+                product.getId(), product.getIsActive(), requestId);
     }
 }

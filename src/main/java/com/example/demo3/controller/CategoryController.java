@@ -5,6 +5,7 @@ import com.example.demo3.service.CategoryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createCategory(@RequestHeader("Authorization") String token,
+    public ResponseEntity<?> createCategory(@RequestHeader("Authorization") @NotEmpty String token,
                                             @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                             @Valid @RequestBody CategoryCreateRequestDTO request) {
         categoryService.createCategory(token, request, userAgent);

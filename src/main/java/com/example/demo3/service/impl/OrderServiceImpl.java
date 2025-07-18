@@ -88,9 +88,7 @@ public class OrderServiceImpl implements OrderService {
         OrderEntity order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order with id:" + id + " not found. Request id: " + requestId));
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
-        if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().equals(user)) {
-            throw new ForbiddenException("You don`t have access to this order. Request id: " + requestId);
-        }
+        checkOrderAccess(user, order, requestId);
         OrderEntityDTO response = orderMapper.toOrderEntityDTO(order);
         logger.info("Order details retrieved for orderId {}, request id: {}", id, requestId);
         return response;
@@ -105,9 +103,7 @@ public class OrderServiceImpl implements OrderService {
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found! ID: " + orderId + ". Request id: " + requestId));
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
-        if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().equals(user)) {
-            throw new ForbiddenException("You don`t have access to this order. Request id: " + requestId);
-        }
+        checkOrderAccess(user, order, requestId);
         if (!order.getStatus().equals(OrderStatus.PENDING)) {
             throw new BadRequestException("Order is not pending! Order status:" + order.getStatus() + ". Request id: " + requestId);
         }
@@ -121,7 +117,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public PageableResponseOrdersDTO getAllOrders(String token, int page, int size, String status, String userAgent) {
         String requestId = UUID.randomUUID().toString();
-        logger.info("Attempt to cancel order. Request id: {}, user agent: {}, page: {}, size: {}.",
+        logger.info("Attempt to get all orders. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
         authService.checkIsUserAdmin(token, requestId);
         Page<OrderEntity> orderEntityPage;
@@ -141,12 +137,8 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void updateOrderStatus(String token, Long orderId, UpdateOrderStatusRequestDTO request, String userAgent) {
-        if (request.getStatus().equals(OrderStatus.CANCELLED)) {
-            cancelOrder(token, orderId, userAgent);
-            return;
-        }
         String requestId = UUID.randomUUID().toString();
-        logger.info("Attempt to cancel order. Request id: {}, user agent; {},  status request: {}.",
+        logger.info("Attempt to update order status. Request id: {}, user agent; {},  status request: {}.",
                 requestId, userAgent, request);
         authService.checkIsUserAdmin(token, requestId);
         OrderEntity order = orderRepository.findById(orderId)
@@ -176,5 +168,11 @@ public class OrderServiceImpl implements OrderService {
         }
         return currentStatus.equals(OrderStatus.SHIPPED) &&
                 requestStatus.equals(OrderStatus.DELIVERED);
+    }
+
+    private void checkOrderAccess(UserEntity user, OrderEntity order, String requestId) {
+        if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().equals(user)) {
+            throw new ForbiddenException("You don`t have access to this order. Request id: " + requestId);
+        }
     }
 }

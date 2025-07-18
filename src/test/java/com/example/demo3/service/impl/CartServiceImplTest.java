@@ -6,6 +6,7 @@ import com.example.demo3.entity.CartEntity;
 import com.example.demo3.entity.CartItemEntity;
 import com.example.demo3.entity.ProductEntity;
 import com.example.demo3.entity.UserEntity;
+import com.example.demo3.exception.BadRequestException;
 import com.example.demo3.exception.NotFoundException;
 import com.example.demo3.mapper.CartItemMapper;
 import com.example.demo3.mapper.CartMapper;
@@ -14,338 +15,344 @@ import com.example.demo3.repository.CartRepository;
 import com.example.demo3.service.AuthService;
 import com.example.demo3.service.ProductService;
 import com.example.demo3.testutil.BaseServiceTest;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class CartServiceImplTest extends BaseServiceTest {
+
     @Mock
     private CartRepository cartRepository;
-
     @Mock
     private ProductService productService;
-
     @Mock
     private CartItemRepository cartItemRepository;
-
     @Mock
     private AuthService authService;
-
     @Mock
     private CartMapper cartMapper;
-
     @Mock
     private CartItemMapper cartItemMapper;
 
     @InjectMocks
     private CartServiceImpl underTest;
 
-    @Test
-    void getCart_ShouldReturnCart() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    private static final UserEntity USER = new UserEntity();
+    private static final CartEntity CART = new CartEntity(USER);
+    private static final ProductEntity PRODUCT = new ProductEntity();
+    private static final Long PRODUCT_ID = 1L;
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-
-        CartDTO expectedCartDTO = new CartDTO();
-        expectedCartDTO.setCartItems(Collections.emptyList());
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(user.getId())).thenReturn(Optional.of(cart));
-        when(cartMapper.toDTO(cart)).thenReturn(expectedCartDTO);
-
-        CartDTO result = underTest.getCart(token, userAgent);
-
-        assertNotNull(result);
-        assertEquals(expectedCartDTO, result);
-
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(user.getId());
-        verify(cartMapper).toDTO(cart);
+    @BeforeAll
+    static void setUp() {
+        USER.setId(1L);
+        CART.setId(1L);
+        PRODUCT.setId(1L);
     }
 
-    @Test
-    void addItemToCart_ShouldUpdateItemInTheCartQuantity() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Get cart tests")
+    class GetCart {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
+        private static final CartDTO EXPECTED_CART_DTO = new CartDTO();
 
-        CartItemEntity existingCartItem = new CartItemEntity();
-        existingCartItem.setProduct(product);
-        existingCartItem.setQuantity(1);
+        @BeforeAll
+        static void setUp() {
+            EXPECTED_CART_DTO.setCartItems(Collections.emptyList());
+        }
 
-        CartItemEntity updatedCartItem = new CartItemEntity();
-        updatedCartItem.setProduct(product);
-        updatedCartItem.setQuantity(2);
+        @Test
+        @DisplayName("Should return cart")
+        void getCart_ShouldReturnCart() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(USER.getId())).thenReturn(Optional.of(CART));
+            when(cartMapper.toDTO(CART)).thenReturn(EXPECTED_CART_DTO);
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(productService.validateAndGetProduct(eq(product.getId()), anyString())).thenReturn(product);
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.of(existingCartItem));
-        when(cartItemMapper.changeQuantity(eq(existingCartItem), eq(2))).thenReturn(updatedCartItem);
+            CartDTO result = underTest.getCart(TOKEN, USER_AGENT);
 
-        underTest.addItemToCart(token, product.getId(), userAgent);
+            assertThat(result).isNotNull().isEqualTo(EXPECTED_CART_DTO);
 
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(productService).validateAndGetProduct(eq(product.getId()), anyString());
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-        verify(cartItemMapper).changeQuantity(eq(existingCartItem), eq(2));
-        verify(cartItemRepository).save(eq(updatedCartItem));
+            InOrder inOrder = inOrder(authService, cartRepository, cartMapper);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(USER.getId());
+            inOrder.verify(cartMapper).toDTO(CART);
+        }
+
+        @Test
+        @DisplayName("When user has no cart should create new cart")
+        void getCart_WhenUserHasNoCart_ShouldCreateNewCart() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(USER.getId())).thenReturn(Optional.empty());
+            when(cartRepository.save(any())).thenReturn(CART);
+            when(cartMapper.toDTO(CART)).thenReturn(EXPECTED_CART_DTO);
+
+            CartDTO result = underTest.getCart(TOKEN, USER_AGENT);
+
+            assertThat(result).isNotNull().isEqualTo(EXPECTED_CART_DTO);
+
+            InOrder inOrder = inOrder(authService, cartRepository, cartRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(USER.getId());
+            inOrder.verify(cartRepository).save(any());
+        }
     }
 
-    @Test
-    void addItemToCart_ShouldReturnNewCartItem() {
-        String token = "valid-token";
-        String userAgent = "testing";
+    @Nested
+    @DisplayName("Add item to cart tests")
+    class AddItemToCart {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
+        private static final CartItemEntity EXISTING_CART_ITEM = new CartItemEntity();
+        private static final CartItemEntity UPDATED_CART_ITEM = new CartItemEntity();
 
-        CartItemEntity existingCartItem = new CartItemEntity();
-        existingCartItem.setProduct(product);
-        existingCartItem.setQuantity(1);
+        @BeforeAll
+        static void setUp() {
+            UPDATED_CART_ITEM.setProduct(PRODUCT);
+            UPDATED_CART_ITEM.setQuantity(2);
+            EXISTING_CART_ITEM.setProduct(PRODUCT);
+            EXISTING_CART_ITEM.setQuantity(1);
+        }
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(productService.validateAndGetProduct(eq(product.getId()), anyString())).thenReturn(product);
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.empty());
-        when(cartItemMapper.createNewCartItemEntity(cart, product, 1)).thenReturn(existingCartItem);
+        @Test
+        @DisplayName("Should update item in the cart quantity")
+        void addItemToCart_ShouldUpdateItemInTheCartQuantity() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(productService.validateAndGetProduct(eq(PRODUCT.getId()), anyString())).thenReturn(PRODUCT);
+            when(cartItemRepository.findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId())))
+                    .thenReturn(Optional.of(EXISTING_CART_ITEM));
+            when(cartItemMapper.changeQuantity(any(CartItemEntity.class), eq(2))).thenReturn(UPDATED_CART_ITEM);
 
-        underTest.addItemToCart(token, product.getId(), userAgent);
+            underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT);
 
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(productService).validateAndGetProduct(eq(product.getId()), anyString());
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-        verify(cartItemMapper).createNewCartItemEntity(cart, product, 1);
-        verify(cartItemRepository).save(eq(existingCartItem));
+            InOrder inOrder = inOrder(authService, cartRepository, productService, cartItemRepository, cartItemMapper,
+                    cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(productService).validateAndGetProduct(eq(PRODUCT.getId()), anyString());
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+            inOrder.verify(cartItemMapper).changeQuantity(any(CartItemEntity.class), eq(2));
+            inOrder.verify(cartItemRepository).save(eq(UPDATED_CART_ITEM));
+        }
+
+        @Test
+        @DisplayName("When item not exists should create new cart item")
+        void addItemToCart_WhenItemNotExists_ShouldCreateNewCartItem() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(productService.validateAndGetProduct(eq(PRODUCT.getId()), anyString())).thenReturn(PRODUCT);
+            when(cartItemRepository.findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId())))
+                    .thenReturn(Optional.empty());
+            when(cartItemMapper.createNewCartItemEntity(CART, PRODUCT, 1)).thenReturn(EXISTING_CART_ITEM);
+
+            underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT);
+
+            InOrder inOrder = inOrder(authService, cartRepository, productService, cartItemRepository, cartItemMapper,
+                    cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(productService).validateAndGetProduct(eq(PRODUCT.getId()), anyString());
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+            inOrder.verify(cartItemMapper).createNewCartItemEntity(CART, PRODUCT, 1);
+            inOrder.verify(cartItemRepository).save(eq(EXISTING_CART_ITEM));
+        }
+
+        @Test
+        @DisplayName("When CART item exists and quantity exceeds limit should throw exception")
+        void addItemToCart_WhenCartItemExistsAndQuantityExceedsLimit_ShouldThrowException() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(productService.validateAndGetProduct(eq(PRODUCT.getId()), anyString()))
+                    .thenThrow(new BadRequestException("test error"));
+
+            BadRequestException exception = assertThrows(BadRequestException.class,
+                    () -> underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT));
+
+            assertThat(exception).isNotNull();
+
+            InOrder inOrder = inOrder(authService, cartRepository, productService);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(productService).validateAndGetProduct(eq(PRODUCT.getId()), anyString());
+        }
     }
 
-    @Test
-    void updateCartItem_ShouldUpdateItemFromCart() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        Long productId = 1L;
-        UpdateCartItemRequestDTO request = new UpdateCartItemRequestDTO(5);
+    @Nested
+    @DisplayName("Update cart item tests")
+    class UpdateCartItem {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
+        private static final CartItemEntity EXISTING_CART_ITEM = new CartItemEntity();
+        private static final UpdateCartItemRequestDTO REQUEST = new UpdateCartItemRequestDTO(5);
+        private static final CartItemEntity UPDATED_CART_ITEM = new CartItemEntity();
 
-        CartItemEntity existingCartItem = new CartItemEntity();
-        existingCartItem.setId(1L);
-        existingCartItem.setProduct(product);
-        existingCartItem.setQuantity(1);
+        @BeforeAll
+        static void setUp() {
+            EXISTING_CART_ITEM.setId(1L);
+            EXISTING_CART_ITEM.setProduct(PRODUCT);
+            EXISTING_CART_ITEM.setQuantity(1);
+            UPDATED_CART_ITEM.setId(1L);
+            UPDATED_CART_ITEM.setProduct(PRODUCT);
+            UPDATED_CART_ITEM.setQuantity(EXISTING_CART_ITEM.getQuantity() + REQUEST.getQuantity());
+        }
 
-        CartItemEntity updatedCartItem = new CartItemEntity();
-        updatedCartItem.setId(1L);
-        updatedCartItem.setProduct(product);
-        updatedCartItem.setQuantity(existingCartItem.getQuantity() + request.getQuantity());
+        @Test
+        @DisplayName("Should update item from cart")
+        void updateCartItem_ShouldUpdateItemFromCart() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(productService.validateAndGetProduct(eq(PRODUCT.getId()), anyString())).thenReturn(PRODUCT);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(cartItemRepository.findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId())))
+                    .thenReturn(Optional.of(EXISTING_CART_ITEM));
+            when(cartItemMapper.changeQuantity(eq(EXISTING_CART_ITEM), eq(REQUEST.getQuantity())))
+                    .thenReturn(UPDATED_CART_ITEM);
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(productService.validateAndGetProduct(eq(product.getId()), anyString())).thenReturn(product);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.of(existingCartItem));
-        when(cartItemMapper.changeQuantity(eq(existingCartItem), eq(request.getQuantity()))).thenReturn(updatedCartItem);
+            underTest.updateCartItem(TOKEN, PRODUCT_ID, REQUEST, USER_AGENT);
 
-        underTest.updateCartItem(token, productId, request, userAgent);
+            InOrder inOrder = inOrder(authService, productService, cartRepository, cartItemRepository, cartItemMapper,
+                    cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(productService).validateAndGetProduct(eq(PRODUCT.getId()), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+            inOrder.verify(cartItemMapper).changeQuantity(eq(EXISTING_CART_ITEM), eq(REQUEST.getQuantity()));
+            inOrder.verify(cartItemRepository).save(eq(UPDATED_CART_ITEM));
+        }
 
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(productService).validateAndGetProduct(eq(product.getId()), anyString());
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-        verify(cartItemMapper).changeQuantity(eq(existingCartItem), eq(request.getQuantity()));
-        verify(cartItemRepository).save(eq(updatedCartItem));
+        @Test
+        @DisplayName("Should create new cart item")
+        void updateCartItem_ShouldCreateNewCartItem() {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(productService.validateAndGetProduct(eq(PRODUCT.getId()), anyString())).thenReturn(PRODUCT);
+            when(cartItemRepository.findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId())))
+                    .thenReturn(Optional.empty());
+            when(cartItemMapper.createNewCartItemEntity(CART, PRODUCT, REQUEST.getQuantity()))
+                    .thenReturn(EXISTING_CART_ITEM);
+
+            underTest.updateCartItem(TOKEN, PRODUCT_ID, REQUEST, USER_AGENT);
+
+            InOrder inOrder = inOrder(authService, productService, cartRepository, cartItemRepository, cartItemMapper,
+                    cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(productService).validateAndGetProduct(eq(PRODUCT.getId()), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+            inOrder.verify(cartItemMapper).createNewCartItemEntity(CART, PRODUCT, REQUEST.getQuantity());
+            inOrder.verify(cartItemRepository).save(eq(EXISTING_CART_ITEM));
+        }
     }
 
-    @Test
-    void updateCartItem_ShouldCreateNewCartItem() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        Long productId = 1L;
-        UpdateCartItemRequestDTO request = new UpdateCartItemRequestDTO(5);
+    @Nested
+    @DisplayName("Remove item from cart tests")
+    class RemoveItemFromCart {
 
+        private static final CartItemEntity CART_ITEM = new CartItemEntity();
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
+        @BeforeAll
+        static void setUp() {
+            CART_ITEM.setProduct(PRODUCT);
+            CART_ITEM.setCart(CART);
+        }
 
-        CartItemEntity existingCartItem = new CartItemEntity();
-        existingCartItem.setProduct(product);
-        existingCartItem.setQuantity(1);
+        private void mockRemoveItemFromCart(CartItemEntity cartItemEntity) {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId()))).thenReturn(Optional.of(CART));
+            when(cartItemRepository.findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId())))
+                    .thenReturn(cartItemEntity != null ? Optional.of(cartItemEntity) : Optional.empty());
+        }
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(productService.validateAndGetProduct(eq(product.getId()), anyString())).thenReturn(product);
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.empty());
-        when(cartItemMapper.createNewCartItemEntity(cart, product, request.getQuantity())).thenReturn(existingCartItem);
+        @Test
+        @DisplayName("Should delete cart item")
+        void removeItemFromCart_ShouldDeleteCartItem() {
+            mockRemoveItemFromCart(CART_ITEM);
 
-        underTest.updateCartItem(token, productId, request, userAgent);
+            underTest.removeItemFromCart(TOKEN, PRODUCT_ID, USER_AGENT);
 
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(productService).validateAndGetProduct(eq(product.getId()), anyString());
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-        verify(cartItemMapper).createNewCartItemEntity(cart, product, request.getQuantity());
-        verify(cartItemRepository).save(eq(existingCartItem));
+            InOrder inOrder = inOrder(authService, cartRepository, cartItemRepository, cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+            inOrder.verify(cartItemRepository).delete(CART_ITEM);
+        }
+
+        @Test
+        @DisplayName("Should throw not found exception")
+        void removeItemFromCart_ShouldThrowNotFoundException() {
+            mockRemoveItemFromCart(null);
+
+            NotFoundException exception = assertThrows(NotFoundException.class,
+                    () -> underTest.removeItemFromCart(TOKEN, PRODUCT_ID, USER_AGENT));
+
+            assertThat(exception).isNotNull();
+
+            InOrder inOrder = inOrder(authService, cartRepository, cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(cartItemRepository).findByCartIdAndProductId(eq(CART.getId()), eq(PRODUCT.getId()));
+        }
     }
 
-    @Test
-    void updateCartItem_ShouldRedirectToRemoveItem() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        Long productId = 1L;
-        UpdateCartItemRequestDTO request = new UpdateCartItemRequestDTO(0);
+    @Nested
+    @DisplayName("Clear cart tests")
+    class ClearCart {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
-        CartItemEntity cartItem = new CartItemEntity();
-        cartItem.setProduct(product);
-        cartItem.setCart(cart);
+        private void mockClearCart(CartEntity cart) {
+            when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
+            when(cartRepository.findByUserId(eq(USER.getId())))
+                    .thenReturn(cart != null ? Optional.of(cart) : Optional.empty());
+        }
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.of(cartItem));
+        @Test
+        @DisplayName("Should throw cart not found")
+        void clearCart_ShouldThrowCartNotFound() {
+            mockClearCart(null);
 
-        underTest.updateCartItem(token, productId, request, userAgent);
+            NotFoundException exception = assertThrows(NotFoundException.class,
+                    () -> underTest.clearCart(TOKEN, USER_AGENT));
 
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
+            assertThat(exception).isNotNull();
+
+            InOrder inOrder = inOrder(authService, cartRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+        }
+
+        @Test
+        @DisplayName("Should return number of deleted items")
+        void clearCart_ShouldReturnNumberOfDeletedItems() {
+            mockClearCart(CART);
+
+            underTest.clearCart(TOKEN, USER_AGENT);
+
+            InOrder inOrder = inOrder(authService, cartRepository, cartItemRepository);
+            inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
+            inOrder.verify(cartRepository).findByUserId(eq(USER.getId()));
+            inOrder.verify(cartItemRepository).deleteAllByCartId(eq(CART.getId()));
+        }
     }
 
-    @Test
-    void removeItemFromCart_ShouldDeleteCartItem() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        Long productId = 1L;
+    @Nested
+    @DisplayName("Delete all by cart id tests")
+    class DeleteAllByCartId {
 
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
-        CartItemEntity cartItem = new CartItemEntity();
-        cartItem.setProduct(product);
-        cartItem.setCart(cart);
+        @Test
+        @DisplayName("Should delete all by cart id")
+        void deleteAllByCartId_ShouldDeleteAllByCartID() {
+            when(cartItemRepository.deleteAllByCartId(CART.getId())).thenReturn(0);
 
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.of(cartItem));
+            underTest.deleteAllByCartId(CART.getId());
 
-        underTest.removeItemFromCart(token, productId, userAgent);
-
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-    }
-
-    @Test
-    void removeItemFromCart_ShouldThrowNotFoundException() {
-        String token = "valid-token";
-        String userAgent = "testing";
-        Long productId = 1L;
-
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-        ProductEntity product = new ProductEntity();
-        product.setId(1L);
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-        when(cartItemRepository.findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()))).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> underTest.removeItemFromCart(token, productId, userAgent));
-
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(cartItemRepository).findByCartIdAndProductId(eq(cart.getId()), eq(product.getId()));
-    }
-
-    @Test
-    void clearCart_ShouldThrowCartNotFound() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.empty());
-
-        assertThrows(NotFoundException.class, () -> underTest.clearCart(token, userAgent));
-
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-    }
-
-    @Test
-    void clearCart_ShouldReturnNumberOfDeletedItems() {
-        String token = "valid-token";
-        String userAgent = "testing";
-
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-
-        when(authService.validateTokenAndGetUser(eq(token), anyString())).thenReturn(user);
-        when(cartRepository.findByUserId(eq(user.getId()))).thenReturn(Optional.of(cart));
-
-        underTest.clearCart(token, userAgent);
-
-        verify(authService).validateTokenAndGetUser(eq(token), anyString());
-        verify(cartRepository).findByUserId(eq(user.getId()));
-        verify(cartItemRepository).deleteAllByCartId(eq(cart.getId()));
-    }
-
-    @Test
-    void deleteAllByCartId_ShouldDeleteAllByCartID() {
-        UserEntity user = new UserEntity();
-        user.setId(1L);
-        CartEntity cart = new CartEntity(user);
-        cart.setId(1L);
-
-        when(cartItemRepository.deleteAllByCartId(cart.getId())).thenReturn(0);
-
-        underTest.deleteAllByCartId(cart.getId());
-
-        verify(cartItemRepository).deleteAllByCartId(cart.getId());
+            verify(cartItemRepository).deleteAllByCartId(CART.getId());
+        }
     }
 }
