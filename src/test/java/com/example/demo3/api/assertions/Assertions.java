@@ -5,6 +5,7 @@ import io.restassured.response.Response;
 
 import static com.example.demo3.api.assertions.StatusCodeAssertions.assertBadRequest;
 import static com.example.demo3.api.assertions.StatusCodeAssertions.assertForbidden;
+import static com.example.demo3.service.impl.AuthServiceImpl.ErrorMessages.ACCESS_DENIED_MESSAGE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class Assertions {
@@ -21,6 +22,6 @@ public class Assertions {
 
     public static void assertUserIsNotAdmin(Response response) {
         assertForbidden(response);
-        assertThat(response.asString()).contains("You must be admin! Request id:");
+        assertThat(response.asString()).contains(ACCESS_DENIED_MESSAGE);
     }
 }
