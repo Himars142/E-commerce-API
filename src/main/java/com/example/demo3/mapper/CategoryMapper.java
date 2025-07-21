@@ -1,9 +1,6 @@
 package com.example.demo3.mapper;
 
-import com.example.demo3.dto.CategoryBasicDTO;
-import com.example.demo3.dto.CategoryChildDTO;
-import com.example.demo3.dto.CategoryCreateRequestDTO;
-import com.example.demo3.dto.PageableResponseCategoryDTO;
+import com.example.demo3.dto.*;
 import com.example.demo3.entity.CategoryEntity;
 import com.example.demo3.repository.CategoryRepository;
 import org.springframework.data.domain.Page;
@@ -81,5 +78,15 @@ public class CategoryMapper {
         response.setPageSize(pageable.getPageable().getPageSize());
         response.setTotalElements(pageable.getTotalElements());
         return response;
+    }
+
+    public CategoryDTO createCategoryDTO(CategoryEntity entity) {
+        CategoryDTO categoryDTO = new CategoryDTO();
+        categoryDTO.setId(entity.getId());
+        categoryDTO.setName(entity.getName());
+        categoryDTO.setDescription(entity.getDescription());
+        categoryDTO.setParent(entity.getParent() == null ? null : createCategoryDTO(entity.getParent()));
+        categoryDTO.setCreatedAt(entity.getCreatedAt());
+        return categoryDTO;
     }
 }

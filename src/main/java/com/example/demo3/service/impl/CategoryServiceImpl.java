@@ -1,6 +1,7 @@
 package com.example.demo3.service.impl;
 
 import com.example.demo3.dto.CategoryCreateRequestDTO;
+import com.example.demo3.dto.CategoryDTO;
 import com.example.demo3.dto.PageableResponseCategoryDTO;
 import com.example.demo3.entity.CategoryEntity;
 import com.example.demo3.exception.NotFoundException;
@@ -45,15 +46,26 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public CategoryEntity getCategoryById(Long id, String requestId) {
+    public CategoryEntity getCategory(Long id, String requestId) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Category not found. Category ID:" + id + ". Request id:" + requestId));
+                .orElseThrow(() -> new NotFoundException("Category not found. Category ID:" + id
+                        + ". Request id:" + requestId));
+    }
+
+    @Override
+    public CategoryDTO getCategoryById(Long id, String userAgent) {
+        String requestId = UUID.randomUUID().toString();
+        logger.info("Attempt to get category by id: {}, request id: {}, userAgent: {}", id, requestId, userAgent);
+        CategoryDTO categoryDTO = categoryMapper.createCategoryDTO(getCategory(id, requestId));
+        logger.info("Success category retried with id: {}, request id: {}", categoryDTO.getId(), requestId);
+        return categoryDTO;
     }
 
     @Override
     public Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
         String requestId = UUID.randomUUID().toString();
-        logger.info("Attempt to create category request id: {}, user agent: {}, category: {}", requestId, userAgent, request.toString());
+        logger.info("Attempt to create category request id: {}, user agent: {}, category: {}",
+                requestId, userAgent, request.toString());
         authService.checkIsUserAdmin(token, requestId);
         CategoryEntity category = categoryRepository.save(categoryMapper.requestToEntity(request));
         logger.info("Success category created request id: {}, category id:{}", requestId, category.getId());

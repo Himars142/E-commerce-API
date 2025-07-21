@@ -3,10 +3,7 @@ package com.example.demo3.controller;
 import com.example.demo3.dto.CategoryCreateRequestDTO;
 import com.example.demo3.service.CategoryService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +25,12 @@ public class CategoryController {
                                               @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                               @RequestParam(defaultValue = "10") @Min(1) @Max(50) int size) {
         return ResponseEntity.ok(categoryService.getAllCategories(page, size, userAgent));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getCategoryById(@RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                             @PathVariable(name = "id") @Positive Long id) {
+        return ResponseEntity.ok(categoryService.getCategoryById(id, userAgent));
     }
 
     @PostMapping
