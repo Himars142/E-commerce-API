@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -22,6 +23,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleBaseException(BaseException ex) {
         logger.warn("STATUS CODE:{}, {}", ex.getHttpStatus(), ex.getMessage());
         return ResponseEntity.status(ex.getHttpStatus()).body(ex.getMessage());
+    }
+
+    @ExceptionHandler (MissingRequestHeaderException.class)
+    public ResponseEntity<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+        logger.warn("STATUS CODE:{}, {}", HttpStatus.BAD_REQUEST, ex.getMessage());
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
