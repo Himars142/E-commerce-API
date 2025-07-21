@@ -51,12 +51,13 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public void createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
+    public Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
         String requestId = UUID.randomUUID().toString();
         logger.info("Attempt to create category request id: {}, user agent: {}, category: {}", requestId, userAgent, request.toString());
         authService.checkIsUserAdmin(token, requestId);
         CategoryEntity category = categoryRepository.save(categoryMapper.requestToEntity(request));
         logger.info("Success category created request id: {}, category id:{}", requestId, category.getId());
+        return category.getId();
     }
 
     @Override

@@ -9,7 +9,7 @@ public interface CategoryService {
 
     CategoryEntity getCategoryById(Long id, String requestId);
 
-    void createCategory(String token, CategoryCreateRequestDTO request, String userAgent);
+    Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent);
 
     void checkIfCategoryExist(Long id, String requestId);
 }
