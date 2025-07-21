@@ -23,7 +23,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
+
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -53,7 +54,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void createOrder(String token, CreateOrderRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to create order. Request id: {}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
         if (user.getCart() == null || user.getCart().getCartItems().isEmpty()) {
@@ -69,7 +70,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PageableResponseOrdersDTO getUserOrders(String token, int page, int size, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get users orders. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
@@ -82,7 +83,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderEntityDTO getOrderDetails(String token, Long id, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get order details. Request id: {}, user agent: {}, order id: {}.",
                 requestId, userAgent, id);
         OrderEntity order = orderRepository.findById(id)
@@ -97,7 +98,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void cancelOrder(String token, Long orderId, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to cancel order. Request id: {}, user agent: {}, order id: {}.",
                 requestId, userAgent, orderId);
         OrderEntity order = orderRepository.findById(orderId)
@@ -118,7 +119,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public PageableResponseOrdersDTO getAllOrders(String token, int page, int size, String status, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get all orders. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
         authService.checkIsUserAdmin(token, requestId);
@@ -139,7 +140,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public void updateOrderStatus(String token, Long orderId, UpdateOrderStatusRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to update order status. Request id: {}, user agent; {},  status request: {}.",
                 requestId, userAgent, request);
         authService.checkIsUserAdmin(token, requestId);

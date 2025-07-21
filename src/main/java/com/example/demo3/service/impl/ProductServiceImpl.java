@@ -20,7 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
+
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @Service
 public class ProductServiceImpl implements ProductService {
@@ -43,7 +44,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductBasicDTO getProductById(Long id, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get product by id. Request id: {}, user agent: {}, product id: {}.",
                 requestId, userAgent, id);
         ProductBasicDTO response = productMapper.toDTO(getProduct(id, requestId));
@@ -53,7 +54,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageableResponseProducts getAllProducts(int page, int size, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get all products. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
         Page<ProductEntity> pageable = productsRepository.findAll(PageRequest.of(page, size));
@@ -66,7 +67,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public void addProduct(String token, ProductRequestDTO product, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to add product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, product.toString());
         authService.checkIsUserAdmin(token, requestId);
@@ -82,7 +83,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public void updateProduct(String token, UpdateProductRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to update product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, request.toString());
         authService.checkIsUserAdmin(token, requestId);
@@ -105,7 +106,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public void changeIsActive(String token, Long id, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to change is active product. Request id: {}, user agent: {}, product id: {}.",
                 requestId, userAgent, id);
         authService.checkIsUserAdmin(token, requestId);
@@ -139,7 +140,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PageableResponseGetProductsByCategory getAllProductByCategoryId(Long categoryId, int page, int size, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to change is active product. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
         Page<ProductEntity> productPage = productsRepository.findByCategoryId(categoryId, PageRequest.of(page, size));

@@ -14,7 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -35,7 +35,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public PageableResponseCategoryDTO getAllCategories(int page, int size, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get all categories pageable request id: {}, user agent: {}, page {}, size: {}",
                 requestId, userAgent, page, size);
         Page<CategoryEntity> pageable = categoryRepository.findAll(PageRequest.of(page, size));
@@ -54,7 +54,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryDTO getCategoryById(Long id, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get category by id: {}, request id: {}, userAgent: {}", id, requestId, userAgent);
         CategoryDTO categoryDTO = categoryMapper.createCategoryDTO(getCategory(id, requestId));
         logger.info("Success category retried with id: {}, request id: {}", categoryDTO.getId(), requestId);
@@ -63,7 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to create category request id: {}, user agent: {}, category: {}",
                 requestId, userAgent, request.toString());
         authService.checkIsUserAdmin(token, requestId);

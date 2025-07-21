@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public JwtResponseDTO registerUser(UserRegistrationRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to register user. Request id: {}, user agent: {}, user: {}.",
                 requestId, userAgent, request.toString());
         userRepository.findByUsername(request.getUsername())
@@ -63,7 +63,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public JwtResponseDTO loginUser(UserLoginDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to login user. Request id: {}, user agent: {}, user: {}.",
                 requestId, userAgent, request.toString());
         UserEntity user = userRepository.findByUsername(request.getUsername())
@@ -81,7 +81,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserProfileDTO getMyProfile(String token, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("User attempt to get own profile. Request id: {}, user agent: {}",
                 requestId, userAgent);
         UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserProfileDTO getUserProfile(Long id, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("User attempt to get profile. Request id: {}, user agent: {}, profile id: {}",
                 requestId, userAgent, id);
         UserEntity entity = userRepository.findById(id)
@@ -105,7 +105,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUserProfile(String token, UserUpdateRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to update profile. Request id: {}, user agent: {}",
                 requestId, userAgent);
         UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))

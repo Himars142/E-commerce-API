@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.UUID;
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @ExtendWith(MockitoExtension.class)
 public abstract class BaseServiceTest {
@@ -24,6 +24,6 @@ public abstract class BaseServiceTest {
 
     @BeforeEach
     void setUp() {
-        requestId = UUID.randomUUID().toString();
+        requestId = generateRequestID();
     }
 }

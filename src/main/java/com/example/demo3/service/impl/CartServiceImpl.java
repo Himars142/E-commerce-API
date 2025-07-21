@@ -19,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
 @Service
 public class CartServiceImpl implements CartService {
@@ -51,7 +51,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public CartDTO getCart(String token, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to get a cart request id:{}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
         CartEntity cart = getOrCreateCartForUser(user);
@@ -64,7 +64,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public void addItemToCart(String token, Long productId, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to add item to a cart request id: {}, user agent: {}, product id: {}",
                 requestId, userAgent, productId);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
@@ -81,7 +81,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public void updateCartItem(String token, Long productId, UpdateCartItemRequestDTO request, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to update cart item request id: {}, product id: {}, quantity: {}, user agent: {}",
                 requestId, productId, request.getQuantity(), userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
@@ -98,7 +98,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public void removeItemFromCart(String token, Long productId, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt to remove item from cart. Request id: {}, user agent: {}, product id: {}",
                 requestId, userAgent, productId);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
@@ -115,7 +115,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     @Override
     public int clearCart(String token, String userAgent) {
-        String requestId = UUID.randomUUID().toString();
+        String requestId = generateRequestID();
         logger.info("Attempt clear cart. Request id: {}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
         CartEntity cart = cartRepository.findByUserId(user.getId())
