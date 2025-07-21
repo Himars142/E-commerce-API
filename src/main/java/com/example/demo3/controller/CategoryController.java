@@ -41,4 +41,12 @@ public class CategoryController {
         URI location = URI.create("/api/categories/" + id);
         return ResponseEntity.created(location).body("Category created! ID: " + id);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteCategory(@RequestHeader("Authorization") @NotEmpty String token,
+                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
+                                            @PathVariable(name = "id") @Positive Long id) {
+        categoryService.deleteCategoryById(id, token, userAgent);
+        return ResponseEntity.ok("Category deleted!");
+    }
 }

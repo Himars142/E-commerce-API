@@ -81,4 +81,14 @@ public class CategoryServiceImpl implements CategoryService {
             throw new NotFoundException("Category not found with id:" + id + ". Request id:" + requestId);
         }
     }
+
+    @Override
+    public void deleteCategoryById(Long id, String token, String userAgent) {
+        String requestId = generateRequestID();
+        logger.info("Attempt to delete category by id: {}, request id: {}, userAgent: {}", id, requestId, userAgent);
+        authService.checkIsUserAdmin(token, requestId);
+        CategoryEntity category = getCategory(id, requestId);
+        categoryRepository.delete(category);
+        logger.info("Success category deleted request id: {}, category id:{}", requestId, category.getId());
+    }
 }

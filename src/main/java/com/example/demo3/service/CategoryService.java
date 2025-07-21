@@ -15,4 +15,6 @@ public interface CategoryService {
     Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent);
 
     void checkIfCategoryExist(Long id, String requestId);
+
+    void deleteCategoryById(Long id, String token, String userAgent);
 }
