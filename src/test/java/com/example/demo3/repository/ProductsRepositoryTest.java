@@ -2,8 +2,8 @@ package com.example.demo3.repository;
 
 import com.example.demo3.entity.CategoryEntity;
 import com.example.demo3.entity.ProductEntity;
-import com.example.demo3.testutil.BaseRepositoryTest;
-import com.example.demo3.testutil.TestDataFactory;
+import com.example.demo3.repository.testutil.BaseRepositoryTest;
+import com.example.demo3.repository.testutil.TestDataFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

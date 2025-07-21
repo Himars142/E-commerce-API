@@ -6,7 +6,7 @@ import com.example.demo3.exception.BadRequestException;
 import com.example.demo3.exception.NotFoundException;
 import com.example.demo3.mapper.UserMapper;
 import com.example.demo3.repository.UserRepository;
-import com.example.demo3.testutil.BaseServiceTest;
+import com.example.demo3.service.impl.testutil.BaseServiceTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -2,7 +2,7 @@ package com.example.demo3.service.impl;
 
 import com.example.demo3.exception.UnauthorizedException;
 import com.example.demo3.security.JwtUtil;
-import com.example.demo3.testutil.BaseServiceTest;
+import com.example.demo3.service.impl.testutil.BaseServiceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

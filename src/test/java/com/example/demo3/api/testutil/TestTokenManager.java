@@ -1,4 +1,4 @@
-package com.example.demo3.api.testutils;
+package com.example.demo3.api.testutil;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.exceptions.JWTDecodeException;

@@ -7,7 +7,7 @@ import com.example.demo3.exception.ForbiddenException;
 import com.example.demo3.exception.UnauthorizedException;
 import com.example.demo3.security.JwtUtil;
 import com.example.demo3.service.UserService;
-import com.example.demo3.testutil.BaseServiceTest;
+import com.example.demo3.service.impl.testutil.BaseServiceTest;
 import org.junit.jupiter.api.*;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;

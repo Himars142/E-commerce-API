@@ -17,8 +17,8 @@ import static com.example.demo3.api.assertions.PageableAssertions.*;
 import static com.example.demo3.api.assertions.StatusCodeAssertions.assertCreated;
 import static com.example.demo3.api.assertions.StatusCodeAssertions.assertOk;
 import static com.example.demo3.api.category.CategoryTestFactory.createCategoryCreateRequestDTO;
-import static com.example.demo3.api.testutils.RestAssuredClient.makeAuthorizedPostRequest;
-import static com.example.demo3.api.testutils.RestAssuredClient.makePageableGetRequest;
+import static com.example.demo3.api.testutil.RestAssuredClient.makeAuthorizedPostRequest;
+import static com.example.demo3.api.testutil.RestAssuredClient.makePageableGetRequest;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 class CategoryApiTest extends ApiTest {

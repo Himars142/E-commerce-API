@@ -1,4 +1,4 @@
-package com.example.demo3.testutil;
+package com.example.demo3.repository.testutil;
 
 import com.example.demo3.entity.*;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;

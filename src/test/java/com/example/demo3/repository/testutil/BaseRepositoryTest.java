@@ -1,4 +1,4 @@
-package com.example.demo3.testutil;
+package com.example.demo3.repository.testutil;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;

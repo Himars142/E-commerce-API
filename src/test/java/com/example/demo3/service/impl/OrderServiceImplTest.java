@@ -11,7 +11,7 @@ import com.example.demo3.exception.NotFoundException;
 import com.example.demo3.mapper.OrderMapper;
 import com.example.demo3.repository.OrderItemRepository;
 import com.example.demo3.repository.OrderRepository;
-import com.example.demo3.testutil.BaseServiceTest;
+import com.example.demo3.service.impl.testutil.BaseServiceTest;
 import org.junit.jupiter.api.*;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;

@@ -1,6 +1,6 @@
 package com.example.demo3.api;
 
-import com.example.demo3.api.testutils.TestTokenManager;
+import com.example.demo3.api.testutil.TestTokenManager;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeAll;
 

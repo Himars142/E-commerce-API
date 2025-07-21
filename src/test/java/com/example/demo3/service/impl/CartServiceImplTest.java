@@ -14,7 +14,7 @@ import com.example.demo3.repository.CartItemRepository;
 import com.example.demo3.repository.CartRepository;
 import com.example.demo3.service.AuthService;
 import com.example.demo3.service.ProductService;
-import com.example.demo3.testutil.BaseServiceTest;
+import com.example.demo3.service.impl.testutil.BaseServiceTest;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

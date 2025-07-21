@@ -1,4 +1,4 @@
-package com.example.demo3.api.testutils;
+package com.example.demo3.api.testutil;
 
 import io.restassured.http.ContentType;
 import io.restassured.http.Method;
