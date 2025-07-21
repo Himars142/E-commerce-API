@@ -13,10 +13,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    static class ErrorMessages {
-        private static final String INVALID_TOKEN_MESSAGE = "Invalid token! Request id: ";
-        private static final String ROLE_IS_NULL_MESSAGE = "Role is null! Request id: ";
-        private static final String ACCESS_DENIED_MESSAGE = "Access is denied! Request id: ";
+    public static class ErrorMessages {
+        public static final String INVALID_TOKEN_MESSAGE = "Invalid token! Request id: ";
+        public static final String ROLE_IS_NULL_MESSAGE = "Role is null! Request id: ";
+        public static final String ACCESS_DENIED_MESSAGE = "Access is denied! Request id: ";
     }
 
     private final JwtUtil jwtUtil;

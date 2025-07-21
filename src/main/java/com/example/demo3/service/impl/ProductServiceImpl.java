@@ -70,7 +70,7 @@ public class ProductServiceImpl implements ProductService {
         logger.info("Attempt to add product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, product.toString());
         authService.checkIsUserAdmin(token, requestId);
-        CategoryEntity category = categoryService.getCategoryById(product.getCategoryId(), requestId);
+        CategoryEntity category = categoryService.getCategory(product.getCategoryId(), requestId);
         productsRepository.findBySku(product.getSku())
                 .ifPresent(sku -> {
                     throw new BadRequestException("Sku must be unique. Request id: " + requestId);
@@ -95,7 +95,7 @@ public class ProductServiceImpl implements ProductService {
                     });
         }
         if (request.getCategoryId() != null) {
-            CategoryEntity category = categoryService.getCategoryById(request.getCategoryId(), requestId);
+            CategoryEntity category = categoryService.getCategory(request.getCategoryId(), requestId);
             productMapper.updateProductCategory(category, product);
         }
         productsRepository.save(productMapper.updateProduct(request, product));

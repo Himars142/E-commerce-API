@@ -131,7 +131,7 @@ class ProductServiceImplTest extends BaseServiceTest {
         @Test
         @DisplayName("Should throw bad request exception sku must be unique")
         void addProduct_ShouldThrowBadRequestExceptionSkuMustBeUnique() {
-            when(categoryService.getCategoryById(any(), anyString())).thenReturn(new CategoryEntity());
+            when(categoryService.getCategory(any(), anyString())).thenReturn(new CategoryEntity());
             when(productsRepository.findBySku(REQUEST.getSku())).thenReturn(Optional.of(new ProductEntity()));
 
             assertThrows(BadRequestException.class, () -> underTest.addProduct(TOKEN, REQUEST, USER_AGENT));
@@ -143,7 +143,7 @@ class ProductServiceImplTest extends BaseServiceTest {
         @Test
         @DisplayName("Should add product")
         void addProduct_ShouldAddProduct() {
-            when(categoryService.getCategoryById(any(), anyString())).thenReturn(CATEGORY);
+            when(categoryService.getCategory(any(), anyString())).thenReturn(CATEGORY);
             when(productsRepository.findBySku(REQUEST.getSku())).thenReturn(Optional.empty());
             when(productsRepository.save(ADDED_PRODUCT)).thenReturn(ADDED_PRODUCT);
             when(productMapper.createProduct(REQUEST, CATEGORY)).thenReturn(ADDED_PRODUCT);
@@ -214,7 +214,7 @@ class ProductServiceImplTest extends BaseServiceTest {
         @DisplayName("Should update product")
         void updateProduct_ShouldUpdateProduct() {
             when(productsRepository.findById(REQUEST.getId())).thenReturn(Optional.of(PRODUCT));
-            when(categoryService.getCategoryById(eq(REQUEST.getCategoryId()), anyString())).thenReturn(CATEGORY);
+            when(categoryService.getCategory(eq(REQUEST.getCategoryId()), anyString())).thenReturn(CATEGORY);
             when(productMapper.updateProductCategory(CATEGORY, PRODUCT)).thenReturn(PRODUCT);
             when(productMapper.updateProduct(REQUEST, PRODUCT)).thenReturn(PRODUCT);
 
@@ -222,7 +222,7 @@ class ProductServiceImplTest extends BaseServiceTest {
 
             InOrder inOrder = inOrder(authService, categoryService, productMapper, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
-            inOrder.verify(categoryService).getCategoryById(eq(REQUEST.getCategoryId()), anyString());
+            inOrder.verify(categoryService).getCategory(eq(REQUEST.getCategoryId()), anyString());
             inOrder.verify(productMapper).updateProductCategory(CATEGORY, PRODUCT);
             inOrder.verify(productsRepository).save(any());
         }

@@ -76,7 +76,7 @@ class CategoryServiceImplTest extends BaseServiceTest {
         void getCategoryById_ShouldReturnCategory() {
             when(categoryRepository.findById(CATEGORY.getId())).thenReturn(Optional.of(CATEGORY));
 
-            CategoryEntity result = underTest.getCategoryById(CATEGORY.getId(), requestId);
+            CategoryEntity result = underTest.getCategory(CATEGORY.getId(), requestId);
 
             assertThat(result)
                     .isNotNull()
@@ -92,7 +92,7 @@ class CategoryServiceImplTest extends BaseServiceTest {
             when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
             NotFoundException exception = assertThrows(NotFoundException.class,
-                    () -> underTest.getCategoryById(1L, requestId));
+                    () -> underTest.getCategory(1L, requestId));
 
             assertThat(exception).isNotNull();
             assertThat(exception.getMessage()).contains(requestId);
