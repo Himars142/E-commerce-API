@@ -67,6 +67,9 @@ public class CategoryServiceImpl implements CategoryService {
         logger.info("Attempt to create category request id: {}, user agent: {}, category: {}",
                 requestId, userAgent, request.toString());
         authService.checkIsUserAdmin(token, requestId);
+        categoryRepository.findById(request.getParent())
+                .orElseThrow(() -> new NotFoundException("Parent category not found ID: " + request.getParent()
+                        + ". Request id: " + requestId));
         CategoryEntity category = categoryRepository.save(categoryMapper.requestToEntity(request));
         logger.info("Success category created request id: {}, category id:{}", requestId, category.getId());
         return category.getId();
