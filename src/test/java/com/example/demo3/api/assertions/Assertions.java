@@ -24,4 +24,8 @@ public class Assertions {
         assertForbidden(response);
         assertThat(response.asString()).contains(ACCESS_DENIED_MESSAGE);
     }
+
+    public static void assertMessageContains(Response response, String string) {
+        assertThat(response.asString()).contains(string);
+    }
 }
