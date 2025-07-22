@@ -27,7 +27,7 @@ public class SecurityConfig {
                                 "/api/products",
                                 "/api/products/**",
                                 "/api/categories",
-                                "/api/categories/{categoryId}/products").permitAll()
+                                "api/categories/{id}").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
