@@ -21,4 +21,8 @@ public class StatusCodeAssertions {
     public static void assertBadRequest(Response response) {
         assertThat(response.getStatusCode()).isEqualTo(400);
     }
+
+    public static void assertNotFound(Response response) {
+        assertThat(response.getStatusCode()).isEqualTo(404);
+    }
 }
