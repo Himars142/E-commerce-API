@@ -1,22 +1,23 @@
 package com.example.demo3.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class CategoryDTO {
     private Long id;
     private String name;
     private String description;
-    private String createdAt;
+    @JsonFormat(pattern = "dd MMM yyyy HH:mm", locale = "uk")
+    private LocalDateTime createdAt;
     private CategoryDTO parent;
 
     public CategoryDTO() {
     }
 
-    public CategoryDTO(Long id, String name, String description, String createdAt, CategoryDTO parent) {
+    public CategoryDTO(Long id, String name, String description, LocalDateTime createdAt, CategoryDTO parent) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -48,13 +49,12 @@ public class CategoryDTO {
         this.description = description;
     }
 
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm");
-        this.createdAt = createdAt.format(formatter);
+        this.createdAt = createdAt;
     }
 
     public CategoryDTO getParent() {
