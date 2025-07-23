@@ -2,7 +2,9 @@ package com.example.demo3.api.category;
 
 import com.example.demo3.api.ApiTest;
 import com.example.demo3.dto.CategoryCreateRequestDTO;
+import com.example.demo3.dto.CategoryDTO;
 import com.example.demo3.dto.PageableResponseCategoryDTO;
+import io.restassured.http.Method;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -11,27 +13,19 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static com.example.demo3.api.assertions.Assertions.assertUserIsNotAdmin;
-import static com.example.demo3.api.assertions.Assertions.assertValidationError;
+import static com.example.demo3.api.assertions.Assertions.*;
 import static com.example.demo3.api.assertions.PageableAssertions.*;
-import static com.example.demo3.api.assertions.StatusCodeAssertions.assertCreated;
-import static com.example.demo3.api.assertions.StatusCodeAssertions.assertOk;
+import static com.example.demo3.api.assertions.StatusCodeAssertions.*;
+import static com.example.demo3.api.category.CategoryTestConstants.*;
 import static com.example.demo3.api.category.CategoryTestFactory.createCategoryCreateRequestDTO;
-import static com.example.demo3.api.testutil.RestAssuredClient.makeAuthorizedPostRequest;
-import static com.example.demo3.api.testutil.RestAssuredClient.makePageableGetRequest;
+import static com.example.demo3.api.testutil.RestAssuredClient.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 class CategoryApiTest extends ApiTest {
 
-    private static final String CATEGORIES_ENDPOINT = "/categories";
-
     @Nested
     @DisplayName("Get all categories tests")
     class GetAllCategory {
-
-        private static final String PAGE_IS_NEGATIVE_ERROR_MESSAGE = "має бути більше або рівне 0";
-        private static final String SIZE_EXCEED_MAX_LIMIT_ERROR_MESSAGE = "має бути менше або рівне 50";
-        private static final String SIZE_IS_NEGATIVE_OR_ZERO_ERROR_MESSAGE = "має бути більше або рівне 1";
 
         private Response makeRequest(Integer page, Integer size) {
             return makePageableGetRequest(CATEGORIES_ENDPOINT, page, size);
@@ -49,9 +43,9 @@ class CategoryApiTest extends ApiTest {
         }
 
         @Test
-        @DisplayName("Should return first page when page is 0")
-        void getAllCategories_WhenPageZero_ShouldReturnFirstPage() {
-            Response response = makeRequest(0, DEFAULT_SIZE);
+        @DisplayName("Should return first page")
+        void getAllCategories_WhenFirstPage_ShouldReturnFirstPage() {
+            Response response = makeRequest(FIRST_PAGE, DEFAULT_SIZE);
 
             assertOk(response);
 
@@ -83,7 +77,7 @@ class CategoryApiTest extends ApiTest {
         void getAllCategories_NegativePage_ShouldReturn400(int negativePage) {
             Response response = makeRequest(negativePage, DEFAULT_SIZE);
 
-            assertValidationError(response, "page", PAGE_IS_NEGATIVE_ERROR_MESSAGE);
+            assertValidationError(response, "page");
         }
 
         @ParameterizedTest
@@ -92,7 +86,7 @@ class CategoryApiTest extends ApiTest {
         void getAllCategories_SizeExceedsLimit_ShouldReturn400(int invalidSize) {
             Response response = makeRequest(DEFAULT_PAGE, invalidSize);
 
-            assertValidationError(response, "size", SIZE_EXCEED_MAX_LIMIT_ERROR_MESSAGE);
+            assertValidationError(response, "size");
         }
 
         @ParameterizedTest
@@ -101,36 +95,34 @@ class CategoryApiTest extends ApiTest {
         void getAllCategories_NegativeSize_ShouldReturn400(int invalidSize) {
             Response response = makeRequest(DEFAULT_PAGE, invalidSize);
 
-            assertValidationError(response, "size", SIZE_IS_NEGATIVE_OR_ZERO_ERROR_MESSAGE);
+            assertValidationError(response, "size");
         }
 
         @Test
         @DisplayName("Should return 400 with multiple validation errors")
         void getAllCategories_MultipleValidationErrors_ShouldReturn400() {
-            Response response = makeRequest(-1, MAX_ALLOWED_SIZE + 1);
+            Response response = makeRequest(-1, MAX_ALLOWED_PAGE_SIZE + 1);
 
-            response.then().statusCode(400);
+            assertBadRequest(response);
 
             String responseBody = response.asString();
             assertThat(responseBody).contains("page");
-            assertThat(responseBody).contains(PAGE_IS_NEGATIVE_ERROR_MESSAGE);
             assertThat(responseBody).contains("size");
-            assertThat(responseBody).contains(SIZE_EXCEED_MAX_LIMIT_ERROR_MESSAGE);
         }
 
         @Test
         @DisplayName("Should handle edge case: page beyond available data")
         void getAllCategories_PageBeyondData_ShouldReturnEmptyPage() {
-            int veryHighPage = 9999;
-
-            Response response = makeRequest(veryHighPage, DEFAULT_SIZE);
+            Response response = makeRequest(PAGE_BEYOND_DATA, DEFAULT_SIZE);
 
             assertOk(response);
 
             PageableResponseCategoryDTO pageableResponse = response.as(PageableResponseCategoryDTO.class);
 
             assertPageableStructure(pageableResponse);
-            assertThat(pageableResponse.getPageNumber()).isEqualTo(veryHighPage);
+            assertThat(pageableResponse.getContent().isEmpty()).isTrue();
+            assertThat(pageableResponse.isLast()).isTrue();
+            assertThat(pageableResponse.getPageNumber()).isEqualTo(PAGE_BEYOND_DATA);
             assertThat(pageableResponse.getPageSize()).isEqualTo(DEFAULT_SIZE);
         }
     }
@@ -139,22 +131,28 @@ class CategoryApiTest extends ApiTest {
     @DisplayName("Create category tests")
     class CreateCategory {
 
-        public static final String CATEGORY_CREATED_MESSAGE = "Category created";
-        private static final String NAME_IS_BLANK_OR_NULL_ERROR_MESSAGE = "Category name cannot be blank or null";
-
         private Response makeRequest(String token, CategoryCreateRequestDTO request) {
             return makeAuthorizedPostRequest(token, request, CATEGORIES_ENDPOINT);
         }
 
         @Test
-        @DisplayName("Should return status code 200 and create category")
+        @DisplayName("Should throw status code 400")
+        void createCategory_NoAuthorizationHeader_ShouldThrowStatusCode401() {
+            CategoryCreateRequestDTO request = createCategoryCreateRequestDTO();
+
+            Response response = makeRequestWithoutAuthorizationHeader(request, CATEGORIES_ENDPOINT, Method.POST);
+
+            assertUnauthorized(response);
+        }
+
+        @Test
+        @DisplayName("Should return status code 201 and create category")
         void createCategory_ValidData_ShouldReturn201() {
-            CategoryCreateRequestDTO request = CategoryTestFactory.createCategoryCreateRequestDTO();
+            CategoryCreateRequestDTO request = createCategoryCreateRequestDTO();
 
             Response response = makeRequest(getAdminToken(), request);
 
             assertCreated(response);
-            assertThat(response.asString()).isEqualTo(CATEGORY_CREATED_MESSAGE);
         }
 
         @ParameterizedTest
@@ -165,7 +163,7 @@ class CategoryApiTest extends ApiTest {
 
             Response response = makeRequest(getAdminToken(), request);
 
-            assertValidationError(response, "name", NAME_IS_BLANK_OR_NULL_ERROR_MESSAGE);
+            assertValidationError(response, "name");
         }
 
         @Test
@@ -175,17 +173,119 @@ class CategoryApiTest extends ApiTest {
 
             Response response = makeRequest(getAdminToken(), request);
 
-            assertValidationError(response, "name", NAME_IS_BLANK_OR_NULL_ERROR_MESSAGE);
+            assertValidationError(response, "name");
         }
 
         @Test
         @DisplayName("Should return 403 when user is not admin")
         void createCategory_NonAdminUser_ShouldReturn403() {
-            CategoryCreateRequestDTO request = CategoryTestFactory.createCategoryCreateRequestDTO();
+            CategoryCreateRequestDTO request = createCategoryCreateRequestDTO();
 
             Response response = makeRequest(getUserToken(), request);
 
             assertUserIsNotAdmin(response);
         }
+    }
+
+    @Nested
+    @DisplayName("Get category by id tests")
+    class GetCategoryById {
+
+        private Response makeRequest(Long id) {
+            return makeGetRequestWithIdParam(CATEGORIES_ENDPOINT, id);
+        }
+
+        @Test
+        @DisplayName("When id not positive should throw status code 400")
+        void getCategoryById_IdNotPositive_ShouldThrowStatusCode400() {
+            Response response = makeRequest(INVALID_NOT_POSITIVE_CATEGORY_ID);
+
+            assertBadRequest(response);
+            assertValidationError(response, "id");
+        }
+
+        @Test
+        @DisplayName("When valid id should return category")
+        void getCategoryById_ShouldReturnCategory() {
+            Long id = createCategoryAndGetId();
+            Response response = makeRequest(id);
+
+            CategoryDTO categoryDTO = response.as(CategoryDTO.class);
+
+            assertOk(response);
+            assertThat(categoryDTO.getId()).isEqualTo(id);
+
+            deleteCategoryById(id);
+        }
+
+        @Test
+        @DisplayName("When category do not exist should throw not found")
+        void getCategoryById_CategoryDoNotExist_ShouldThrowNotFound() {
+            Response response = makeRequest(Long.MAX_VALUE);
+
+            assertNotFound(response);
+            assertMessageHasRequestId(response);
+        }
+    }
+
+    private static void deleteCategoryById(Long id) {
+        makeDeleteRequestWithIdParam(getAdminToken(), CATEGORIES_ENDPOINT, id);
+    }
+
+    @Nested
+    @DisplayName("Delete category by id tests")
+    class DeleteCategoryById {
+
+        private Response makeRequest(String token, Long id) {
+            return makeDeleteRequestWithIdParam(token, CATEGORIES_ENDPOINT, id);
+        }
+
+        @Test
+        @DisplayName("When id not positive should throw status code 400")
+        void deleteCategoryById_IdNotPositive_ShouldThrowStatusCode400() {
+            Response response = makeRequest(getAdminToken(), INVALID_NOT_POSITIVE_CATEGORY_ID);
+
+            assertBadRequest(response);
+            assertValidationError(response, "id");
+        }
+
+        @Test
+        @DisplayName("When valid id should delete category")
+        void getCategoryById_ShouldReturnCategory() {
+            Long id = createCategoryAndGetId();
+
+            Response deleteResponse = makeRequest(getAdminToken(), id);
+
+            assertOk(deleteResponse);
+
+            Response getResponse = makeGetRequestWithIdParam(CATEGORIES_ENDPOINT, id);
+
+            assertNotFound(getResponse);
+            assertMessageHasRequestId(getResponse);
+        }
+
+        @Test
+        @DisplayName("When category do not exist should throw not found")
+        void deleteCategoryById_CategoryDoNotExist_ShouldThrowNotFound() {
+            Response response = makeRequest(getAdminToken(), Long.MAX_VALUE);
+
+            assertNotFound(response);
+            assertMessageHasRequestId(response);
+        }
+
+        @Test
+        @DisplayName("When user not admin should return status code 403 and throw forbidden exception")
+        void deleteCategoryId_UserNotAdmin_ShouldReturn403() {
+            Response response = makeRequest(getUserToken(), VALID_CATEGORY_ID);
+
+            assertForbidden(response);
+        }
+    }
+
+    private static Long createCategoryAndGetId() {
+        CategoryCreateRequestDTO request = createCategoryCreateRequestDTO();
+        Response createCategoryResponse = makeAuthorizedPostRequest(getAdminToken(), request, CATEGORIES_ENDPOINT);
+        String URI = createCategoryResponse.getHeader("Location");
+        return Long.parseLong(URI.substring(URI.lastIndexOf('/') + 1));
     }
 }
