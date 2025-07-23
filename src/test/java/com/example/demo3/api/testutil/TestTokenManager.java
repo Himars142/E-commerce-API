@@ -13,19 +13,12 @@ import static io.restassured.RestAssured.given;
 
 public class TestTokenManager {
 
-    private static class CachedToken {
-        final String value;
-        final Instant expiry;
-
-        public CachedToken(String value, Instant expiry) {
-            this.value = value;
-            this.expiry = expiry;
-        }
+    private record CachedToken(String value, Instant expiry) {
 
         boolean isExpired() {
-            return Instant.now().isAfter(expiry.minusSeconds(30));
+                return Instant.now().isAfter(expiry.minusSeconds(30));
+            }
         }
-    }
 
     private CachedToken jwtAdminToken;
     private CachedToken jwtUserToken;
