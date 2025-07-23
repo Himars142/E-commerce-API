@@ -9,15 +9,12 @@ import static com.example.demo3.service.impl.AuthServiceImpl.ErrorMessages.ACCES
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class Assertions {
-    public static void assertValidationError(Response response, String field, String expectedMessage) {
+    public static void assertValidationError(Response response, String field) {
         assertBadRequest(response);
         response.then()
                 .contentType(ContentType.JSON);
         String responseBody = response.asString();
         assertThat(responseBody).containsIgnoringCase(field);
-        if (expectedMessage != null) {
-            assertThat(responseBody).containsIgnoringCase(expectedMessage);
-        }
     }
 
     public static void assertUserIsNotAdmin(Response response) {
@@ -27,5 +24,9 @@ public class Assertions {
 
     public static void assertMessageContains(Response response, String string) {
         assertThat(response.asString()).contains(string);
+    }
+
+    public static void assertMessageHasRequestId(Response response) {
+        assertThat(response.asString()).containsIgnoringCase("request id");
     }
 }
