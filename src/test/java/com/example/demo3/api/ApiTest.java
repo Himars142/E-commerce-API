@@ -12,7 +12,7 @@ public abstract class ApiTest {
     private static final String BASE_PATH = "/api";
     protected static final int DEFAULT_PAGE = 0;
     protected static final int DEFAULT_SIZE = 10;
-    protected static final int MAX_ALLOWED_SIZE = 50;
+    protected static final int MAX_ALLOWED_PAGE_SIZE = 50;
 
     @BeforeAll
     public static void setup() {
