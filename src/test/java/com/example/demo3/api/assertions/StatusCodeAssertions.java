@@ -16,6 +16,8 @@ public class StatusCodeAssertions {
 
     public static void assertForbidden(Response response) {
         assertThat(response.getStatusCode()).isEqualTo(403);
+        assertMessageContains(response, "Access is denied!");
+        assertMessageHasRequestId(response);
     }
 
     public static void assertBadRequest(Response response) {
