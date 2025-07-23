@@ -27,8 +27,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler (MissingRequestHeaderException.class)
     public ResponseEntity<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
-        logger.warn("STATUS CODE:{}, {}", HttpStatus.BAD_REQUEST, ex.getMessage());
-        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        logger.warn("STATUS CODE:{}, {}", HttpStatus.UNAUTHORIZED, ex.getMessage());
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
