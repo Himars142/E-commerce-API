@@ -161,6 +161,7 @@ src/
       repository/    # Repository tests
       service/       # Service unit tests
 ```
+---
 
 ## Running the Project
 
@@ -174,15 +175,15 @@ src/
 
 1. **Clone the repository:**
    ```sh
-   git clone <your-repo-url>
+   git clone https://github.com/Himars142/E-commerce-API.git
    cd demo3
    ```
 
 2. **Configure the database:**
    - Set your PostgreSQL credentials in `src/main/resources/application.properties`:
      ```
-     spring.datasource.url=jdbc:postgresql://localhost:5432/demo3
-     spring.datasource.username=postgres
+     spring.datasource.url=your_database_url
+     spring.datasource.username=your_username
      spring.datasource.password=your_password
      ```
 
