@@ -4,6 +4,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -11,9 +12,18 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private final String jwtSecret = "b7f8d9e2a1c3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9";
-    private final long accessTokenExpirationMs = 7 * 24 * 60 * 60 * 1000 /*15 * 60 * 1000 */;
-    private final long refreshTokenExpirationMS = 7 * 24 * 60 * 60 * 1000;
+    private final String jwtSecret;
+    private final long accessTokenExpirationMs;
+    private final long refreshTokenExpirationMS;
+
+    public JwtUtil(@Value("${token.jwtSecret}") String jwtSecret,
+                   @Value("${token.accessTokenExpirationMs}") long accessTokenExpirationMs,
+                   @Value("${token.refreshTokenExpirationMS}") long refreshTokenExpirationMS) {
+        this.jwtSecret = jwtSecret;
+        this.accessTokenExpirationMs = accessTokenExpirationMs;
+        this.refreshTokenExpirationMS = refreshTokenExpirationMS;
+
+    }
 
     private Key getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
