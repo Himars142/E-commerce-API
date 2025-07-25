@@ -12,10 +12,10 @@ This project is a RESTful API for an e-commerce platform built with Spring Boot.
 - `POST /api/users/login`  
   Login and receive JWT tokens.
 
-- `GET /api/users/me`  
+- `GET /api/users/`  
   Get current user profile (JWT required).
 
-- `PUT /api/users/me`  
+- `PUT /api/users/`  
   Update current user profile (JWT required).
 
 ---
@@ -192,7 +192,7 @@ src/
 
 4. **Run the application:**
    ```sh
-   ./mvnw spring-boot:run
+./mvnw spring-boot:run
    ```
    The API will be available at: `http://localhost:9999/api`
 
