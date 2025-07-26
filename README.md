@@ -123,10 +123,10 @@ This project is a RESTful API for an e-commerce platform built with Spring Boot.
 
 ### Order Management
 
-- `GET /api/orders/admin/all`
+- `GET /api/orders/`
   - Get all orders (with optional status filter, pagination).
   - **Query:** `page`, `size`, `status`
-- `PUT /api/orders/admin/{orderId}/status`
+- `PUT /api/orders/{orderId}/status`
   - Update order status (e.g., approve, ship, complete, cancel).
   - **Body:** `UpdateOrderStatusRequestDTO`
 
