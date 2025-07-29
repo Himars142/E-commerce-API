@@ -53,7 +53,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public void createOrder(String token, CreateOrderRequestDTO request, String userAgent) {
+    public Long createOrder(String token, CreateOrderRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to create order. Request id: {}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
@@ -66,6 +66,7 @@ public class OrderServiceImpl implements OrderService {
         productService.decreaseStockForOrderItems(cartItems);
         cartService.deleteAllByCartId(user.getCart().getId());
         logger.info("Order created for user id {}, order id {}, request id: {}", user.getId(), order.getId(), requestId);
+        return order.getId();
     }
 
     @Override

@@ -12,7 +12,7 @@ public interface ProductService {
 
     PageableResponseProducts getAllProducts(int page, int size, String userAgent);
 
-    void addProduct(String token, ProductRequestDTO product, String userAgent);
+    Long addProduct(String token, ProductRequestDTO product, String userAgent);
 
     void updateProduct(String token, UpdateProductRequestDTO product, String userAgent);
 

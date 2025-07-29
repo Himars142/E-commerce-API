@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
         UserEntity userEntity = userRepository
                 .save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
         logger.info("Success! Request id: {}. Saved user: {}", requestId, userEntity.getId());
-        return new JwtResponseDTO(accessToken, refreshToken);
+        return new JwtResponseDTO(accessToken, refreshToken, userEntity.getId());
     }
 
     @Transactional
@@ -74,9 +74,9 @@ public class UserServiceImpl implements UserService {
         String accessToken = tokenService.generateAccessToken(user.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
         user.setRefreshToken(refreshToken);
-        userRepository.save(user);
+        UserEntity userEntity = userRepository.save(user);
         logger.info("Successfully user logged in: {}, Request id: {}", user.getId(), requestId);
-        return new JwtResponseDTO(accessToken, refreshToken);
+        return new JwtResponseDTO(accessToken, refreshToken, userEntity.getId());
     }
 
     @Override

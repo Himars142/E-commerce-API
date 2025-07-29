@@ -170,6 +170,7 @@ class UserServiceImplTest extends BaseServiceTest {
             when(passwordEncoder.matches(REQUEST.getPassword(), USER.getPassword())).thenReturn(true);
             when(tokenService.generateAccessToken(USER.getUsername())).thenReturn(ACCESS_TOKEN);
             when(tokenService.generateRefreshToken(USER.getUsername())).thenReturn(REFRESH_TOKEN);
+            when(userRepository.save(any())).thenReturn(USER);
 
             JwtResponseDTO result = underTest.loginUser(REQUEST, USER_AGENT);
 

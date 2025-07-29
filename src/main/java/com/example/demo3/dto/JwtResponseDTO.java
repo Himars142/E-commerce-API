@@ -1,12 +1,17 @@
 package com.example.demo3.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class JwtResponseDTO {
     private String accessToken;
     private String refreshToken;
+    private Long id;
 
-    public JwtResponseDTO(String accessToken, String refreshToken) {
+    public JwtResponseDTO(String accessToken, String refreshToken, Long id) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
+        this.id = id;
     }
 
     public String getAccessToken() {
@@ -23,5 +28,13 @@ public class JwtResponseDTO {
 
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

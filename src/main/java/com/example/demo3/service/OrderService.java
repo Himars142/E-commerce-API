@@ -6,7 +6,7 @@ import com.example.demo3.dto.PageableResponseOrdersDTO;
 import com.example.demo3.dto.UpdateOrderStatusRequestDTO;
 
 public interface OrderService {
-    void createOrder(String token, CreateOrderRequestDTO request, String userAgent);
+    Long createOrder(String token, CreateOrderRequestDTO request, String userAgent);
 
     PageableResponseOrdersDTO getUserOrders(String token, int page, int size, String userAgent);
 

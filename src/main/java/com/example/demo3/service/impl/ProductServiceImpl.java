@@ -66,7 +66,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Transactional
     @Override
-    public void addProduct(String token, ProductRequestDTO product, String userAgent) {
+    public Long addProduct(String token, ProductRequestDTO product, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to add product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, product.toString());
@@ -78,6 +78,7 @@ public class ProductServiceImpl implements ProductService {
                 });
         ProductEntity productEntity = productsRepository.save(productMapper.createProduct(product, category));
         logger.info("Success product created id: {}, request id: {}", productEntity.getId(), requestId);
+        return productEntity.getId();
     }
 
     @Transactional

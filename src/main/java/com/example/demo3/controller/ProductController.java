@@ -6,10 +6,11 @@ import com.example.demo3.dto.UpdateProductRequestDTO;
 import com.example.demo3.service.ProductService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/api/products")
@@ -32,8 +33,9 @@ public class ProductController {
     public ResponseEntity<?> addProduct(@RequestHeader("Authorization") @NotEmpty String token,
                                         @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                         @Valid @RequestBody ProductRequestDTO product) {
-        productService.addProduct(token, product, userAgent);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Product added successfully!");
+        Long id = productService.addProduct(token, product, userAgent);
+        URI location = URI.create("/api/products/" + id);
+        return ResponseEntity.created(location).body("Product created! ID: " + id);
     }
 
     @GetMapping

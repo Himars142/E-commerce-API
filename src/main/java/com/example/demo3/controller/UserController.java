@@ -1,5 +1,6 @@
 package com.example.demo3.controller;
 
+import com.example.demo3.dto.JwtResponseDTO;
 import com.example.demo3.dto.UserLoginDTO;
 import com.example.demo3.dto.UserRegistrationRequestDTO;
 import com.example.demo3.dto.UserUpdateRequestDTO;
@@ -24,7 +25,8 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestHeader(name = "User-Agent", required = false) String userAgent,
                                           @Valid @RequestBody UserRegistrationRequestDTO request) {
-        return ResponseEntity.ok(userService.registerUser(request, userAgent));
+        JwtResponseDTO jwtResponse = userService.registerUser(request, userAgent);
+        return ResponseEntity.created(java.net.URI.create("/api/users/" + jwtResponse.getId())).body(jwtResponse);
     }
 
     @PostMapping("/login")

@@ -6,7 +6,6 @@ import com.example.demo3.entity.OrderStatus;
 import com.example.demo3.service.OrderService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,8 +24,8 @@ public class OrderController {
     public ResponseEntity<?> createOrder(@RequestHeader("Authorization") @NotEmpty String token,
                                          @RequestHeader(name = "User-Agent", required = false) String userAgent,
                                          @Valid @RequestBody CreateOrderRequestDTO request) {
-        orderService.createOrder(token, request, userAgent);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Order created successfully");
+        Long id = orderService.createOrder(token, request, userAgent);
+        return ResponseEntity.created(java.net.URI.create("/api/orders/" + id)).body("Order created! ID: " + id);
     }
 
     @GetMapping
