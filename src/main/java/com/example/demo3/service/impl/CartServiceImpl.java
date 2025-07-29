@@ -6,6 +6,7 @@ import com.example.demo3.entity.CartEntity;
 import com.example.demo3.entity.CartItemEntity;
 import com.example.demo3.entity.ProductEntity;
 import com.example.demo3.entity.UserEntity;
+import com.example.demo3.exception.NoContentException;
 import com.example.demo3.exception.NotFoundException;
 import com.example.demo3.mapper.CartItemMapper;
 import com.example.demo3.mapper.CartMapper;
@@ -54,7 +55,8 @@ public class CartServiceImpl implements CartService {
         String requestId = generateRequestID();
         logger.info("Attempt to get a cart request id:{}, user agent: {}", requestId, userAgent);
         UserEntity user = authService.validateTokenAndGetUser(token, requestId);
-        CartEntity cart = getOrCreateCartForUser(user);
+        CartEntity cart = cartRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new NoContentException("Cart is empty"));
         CartDTO cartDTO = cartMapper.toDTO(cart);
         logger.info("Successfully retrieved cart request id: {}, for user ID: {}. Cart ID: {}",
                 requestId, user.getId(), cart.getId());
