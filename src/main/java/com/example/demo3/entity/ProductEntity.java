@@ -26,7 +26,7 @@ public class ProductEntity {
     @Column(name = "stock_quantity")
     private Integer stockQuantity = 0;
 
-    @Column(name = "sku", unique = true, nullable = false,  length = 100)
+    @Column(name = "sku", unique = true, nullable = false, length = 100)
     private String sku;
 
     @Column(name = "is_active")

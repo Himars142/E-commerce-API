@@ -1,10 +1,9 @@
 package com.example.demo3.api.cart;
 
 import com.example.demo3.api.ApiTest;
-import com.example.demo3.dto.CartDTO;
-import com.example.demo3.dto.UpdateCartItemRequestDTO;
-import com.example.demo3.dto.ProductRequestDTO;
 import com.example.demo3.dto.CategoryCreateRequestDTO;
+import com.example.demo3.dto.ProductRequestDTO;
+import com.example.demo3.dto.UpdateCartItemRequestDTO;
 import io.restassured.http.Method;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
@@ -27,7 +26,7 @@ public class CartApiTest extends ApiTest {
         assertCreated(categoryResponse);
         String categoryLocation = categoryResponse.getHeader("Location");
         Long categoryId = Long.parseLong(categoryLocation.substring(categoryLocation.lastIndexOf('/') + 1));
-        
+
         ProductRequestDTO product = new ProductRequestDTO();
         product.setName("Test Product " + System.nanoTime());
         product.setPrice(new java.math.BigDecimal("9.99"));

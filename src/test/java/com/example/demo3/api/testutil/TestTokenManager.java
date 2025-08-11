@@ -16,9 +16,9 @@ public class TestTokenManager {
     private record CachedToken(String value, Instant expiry) {
 
         boolean isExpired() {
-                return Instant.now().isAfter(expiry.minusSeconds(30));
-            }
+            return Instant.now().isAfter(expiry.minusSeconds(30));
         }
+    }
 
     private CachedToken jwtAdminToken;
     private CachedToken jwtUserToken;

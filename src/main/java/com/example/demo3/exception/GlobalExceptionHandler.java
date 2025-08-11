@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getHttpStatus()).body(ex.getMessage());
     }
 
-    @ExceptionHandler (MissingRequestHeaderException.class)
+    @ExceptionHandler(MissingRequestHeaderException.class)
     public ResponseEntity<String> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
         logger.warn("STATUS CODE:{}, {}", HttpStatus.UNAUTHORIZED, ex.getMessage());
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.UNAUTHORIZED);

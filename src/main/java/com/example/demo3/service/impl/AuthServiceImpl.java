@@ -9,7 +9,6 @@ import com.example.demo3.security.CustomUserDetails;
 import com.example.demo3.security.JwtUtil;
 import com.example.demo3.service.AuthService;
 import com.example.demo3.service.UserService;
-import org.hibernate.usertype.CompositeUserType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

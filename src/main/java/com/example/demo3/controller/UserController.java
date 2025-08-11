@@ -6,7 +6,6 @@ import com.example.demo3.dto.UserRegistrationRequestDTO;
 import com.example.demo3.dto.UserUpdateRequestDTO;
 import com.example.demo3.service.UserService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
