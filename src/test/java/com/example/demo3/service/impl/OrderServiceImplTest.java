@@ -91,7 +91,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderMapper.createOrder(USER, REQUEST, List.of(CART_ITEM))).thenReturn(ORDER);
             when(orderRepository.save(ORDER)).thenReturn(ORDER);
 
-            underTest.createOrder(TOKEN, REQUEST, USER_AGENT);
+            underTest.createOrder(REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(orderMapper, orderRepository, productService, cartService);
             inOrder.verify(orderMapper).createOrder(USER, REQUEST, List.of(CART_ITEM));
@@ -107,7 +107,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
 
-            assertThrows(NotFoundException.class, () -> underTest.createOrder(TOKEN, REQUEST, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.createOrder(REQUEST, USER_AGENT));
 
             verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
         }
@@ -120,7 +120,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
 
             NotFoundException exception = assertThrows(NotFoundException.class,
-                    () -> underTest.createOrder(TOKEN, REQUEST, USER_AGENT));
+                    () -> underTest.createOrder(REQUEST, USER_AGENT));
 
             assertThat(exception).isNotNull();
 
@@ -143,7 +143,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(response);
 
             PageableResponseOrdersDTO result = underTest
-                    .getUserOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, USER_AGENT);
+                    .getUserOrders(DEFAULT_PAGE, DEFAULT_PAGE_SIZE, USER_AGENT);
 
             assertThat(result).isNotNull().isSameAs(response);
 
@@ -166,7 +166,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
             when(orderMapper.toOrderEntityDTO(ORDER)).thenReturn(RESPONSE);
 
-            OrderEntityDTO result = underTest.getOrderDetails(TOKEN, ORDER.getId(), USER_AGENT);
+            OrderEntityDTO result = underTest.getOrderDetails(ORDER.getId(), USER_AGENT);
 
             assertThat(result).isNotNull().isSameAs(RESPONSE);
 
@@ -184,7 +184,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
             when(orderMapper.toOrderEntityDTO(ORDER)).thenReturn(RESPONSE);
 
-            OrderEntityDTO result = underTest.getOrderDetails(TOKEN, ORDER.getId(), USER_AGENT);
+            OrderEntityDTO result = underTest.getOrderDetails(ORDER.getId(), USER_AGENT);
 
             assertThat(result).isNotNull().isSameAs(RESPONSE);
 
@@ -199,7 +199,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderRepository.findById(2L)).thenReturn(Optional.of(ANOTHER_USER_ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
 
-            assertThrows(ForbiddenException.class, () -> underTest.getOrderDetails(TOKEN, ANOTHER_USER_ORDER.getId(), USER_AGENT));
+            assertThrows(ForbiddenException.class, () -> underTest.getOrderDetails(ANOTHER_USER_ORDER.getId(), USER_AGENT));
 
             verify(orderRepository).findById(2L);
         }
@@ -209,7 +209,7 @@ class OrderServiceImplTest extends BaseServiceTest {
         void getOrderDetails_ShouldThrowNotFoundException() {
             when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.getOrderDetails(TOKEN, 1L, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.getOrderDetails(1L, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -234,7 +234,7 @@ class OrderServiceImplTest extends BaseServiceTest {
         void cancelOrder_ShouldThrowNotFoundExceptionBecauseOrder() {
             when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(TOKEN, 1L, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(1L, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -245,7 +245,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderRepository.findById(2L)).thenReturn(Optional.of(ANOTHER_USER_ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
 
-            assertThrows(ForbiddenException.class, () -> underTest.cancelOrder(TOKEN, ANOTHER_USER_ORDER.getId(), USER_AGENT));
+            assertThrows(ForbiddenException.class, () -> underTest.cancelOrder(ANOTHER_USER_ORDER.getId(), USER_AGENT));
 
             verify(orderRepository).findById(2L);
         }
@@ -258,7 +258,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
 
-            assertThrows(BadRequestException.class, () -> underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT));
+            assertThrows(BadRequestException.class, () -> underTest.cancelOrder(ORDER.getId(), USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -272,7 +272,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(authService.validateTokenAndGetUser(eq(TOKEN), anyString())).thenReturn(USER);
             when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of());
 
-            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.cancelOrder(ORDER.getId(), USER_AGENT));
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository);
             inOrder.verify(orderRepository).findById(1L);
@@ -289,7 +289,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of(ORDER_ITEM));
             when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
 
-            underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
+            underTest.cancelOrder(ORDER.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
             inOrder.verify(orderRepository).findById(1L);
@@ -308,7 +308,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderItemRepository.findByOrderId(ORDER.getId())).thenReturn(List.of(ORDER_ITEM));
             when(orderMapper.cancelOrder(ORDER)).thenReturn(ORDER_CANCELED);
 
-            underTest.cancelOrder(TOKEN, ORDER.getId(), USER_AGENT);
+            underTest.cancelOrder(ORDER.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderItemRepository, productService);
             inOrder.verify(orderRepository).findById(1L);
@@ -330,7 +330,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(RESPONSE);
 
             PageableResponseOrdersDTO result = underTest
-                    .getAllOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, null, USER_AGENT);
+                    .getAllOrders(DEFAULT_PAGE, DEFAULT_PAGE_SIZE, null, USER_AGENT);
 
             assertThat(result).isNotNull().isSameAs(RESPONSE);
 
@@ -351,7 +351,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderMapper.createPageableResponseOrdersDTO(PAGE_EMPTY)).thenReturn(RESPONSE);
 
             PageableResponseOrdersDTO result = underTest
-                    .getAllOrders(TOKEN, DEFAULT_PAGE, DEFAULT_PAGE_SIZE, status, USER_AGENT);
+                    .getAllOrders(DEFAULT_PAGE, DEFAULT_PAGE_SIZE, status, USER_AGENT);
 
             assertThat(result).isNotNull().isSameAs(RESPONSE);
 
@@ -375,7 +375,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             REQUEST.setStatus(OrderStatus.CANCELLED);
 
             assertThrows(NotFoundException.class,
-                    () -> underTest.updateOrderStatus(TOKEN, ORDER.getId(), REQUEST, USER_AGENT));
+                    () -> underTest.updateOrderStatus(ORDER.getId(), REQUEST, USER_AGENT));
         }
 
         @Test
@@ -385,7 +385,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.updateOrderStatus(1L, REQUEST, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -398,7 +398,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-            assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
+            assertThrows(BadRequestException.class, () -> underTest.updateOrderStatus(1L, REQUEST, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -411,7 +411,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
+            underTest.updateOrderStatus(1L, REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderRepository);
             inOrder.verify(orderRepository).findById(1L);
@@ -426,7 +426,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
+            underTest.updateOrderStatus(1L, REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderRepository);
             inOrder.verify(orderRepository).findById(1L);
@@ -441,7 +441,7 @@ class OrderServiceImplTest extends BaseServiceTest {
 
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
-            underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT);
+            underTest.updateOrderStatus(1L, REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(orderRepository, orderRepository);
             inOrder.verify(orderRepository).findById(1L);
@@ -457,7 +457,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
             assertThrows(BadRequestException.class,
-                    () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
+                    () -> underTest.updateOrderStatus(1L, REQUEST, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }
@@ -471,7 +471,7 @@ class OrderServiceImplTest extends BaseServiceTest {
             when(orderRepository.findById(1L)).thenReturn(Optional.of(ORDER));
 
             assertThrows(BadRequestException.class,
-                    () -> underTest.updateOrderStatus(TOKEN, 1L, REQUEST, USER_AGENT));
+                    () -> underTest.updateOrderStatus(1L, REQUEST, USER_AGENT));
 
             verify(orderRepository).findById(1L);
         }

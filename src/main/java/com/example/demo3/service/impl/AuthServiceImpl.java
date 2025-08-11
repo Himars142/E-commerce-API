@@ -5,9 +5,13 @@ import com.example.demo3.entity.UserRole;
 import com.example.demo3.exception.BadRequestException;
 import com.example.demo3.exception.ForbiddenException;
 import com.example.demo3.exception.UnauthorizedException;
+import com.example.demo3.security.CustomUserDetails;
 import com.example.demo3.security.JwtUtil;
 import com.example.demo3.service.AuthService;
 import com.example.demo3.service.UserService;
+import org.hibernate.usertype.CompositeUserType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,6 +25,20 @@ public class AuthServiceImpl implements AuthService {
 
     private final JwtUtil jwtUtil;
     private final UserService userService;
+
+    @Override
+    public UserEntity getCurrentAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BadRequestException("User not authenticated");
+        }
+
+        if (authentication.getPrincipal() instanceof CustomUserDetails userDetails) {
+            return userDetails.getUser();
+        }
+
+        throw new BadRequestException("Invalid authentication principal");
+    }
 
     public AuthServiceImpl(JwtUtil jwtUtil, UserService userService) {
         this.jwtUtil = jwtUtil;

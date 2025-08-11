@@ -29,4 +29,9 @@ public class Assertions {
     public static void assertMessageHasRequestId(Response response) {
         assertThat(response.asString()).containsIgnoringCase("request id");
     }
+
+    public static void assertHasAccessDenied(Response response) {
+        assertMessageContains(response, "Access is denied!");
+        assertMessageHasRequestId(response);
+    }
 }

@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
@@ -20,16 +21,13 @@ import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
-    private final AuthServiceImpl authService;
 
     private static final Logger logger = LoggerFactory.getLogger(CategoryServiceImpl.class);
 
     public CategoryServiceImpl(CategoryRepository categoryRepository,
-                               CategoryMapper categoryMapper,
-                               AuthServiceImpl authService) {
+                               CategoryMapper categoryMapper) {
         this.categoryRepository = categoryRepository;
         this.categoryMapper = categoryMapper;
-        this.authService = authService;
     }
 
 
@@ -61,12 +59,12 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryDTO;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Override
-    public Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent) {
+    public Long createCategory(CategoryCreateRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to create category request id: {}, user agent: {}, category: {}",
                 requestId, userAgent, request.toString());
-        authService.checkIsUserAdmin(token, requestId);
         if (request.getParent() != null) {
             categoryRepository.findById(request.getParent())
                     .orElseThrow(() -> new NotFoundException("Parent category not found ID: " + request.getParent()
@@ -84,11 +82,11 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Override
-    public void deleteCategoryById(Long id, String token, String userAgent) {
+    public void deleteCategoryById(Long id, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to delete category by id: {}, request id: {}, userAgent: {}", id, requestId, userAgent);
-        authService.checkIsUserAdmin(token, requestId);
         CategoryEntity category = getCategory(id, requestId);
         categoryRepository.delete(category);
         logger.info("Success category deleted request id: {}, category id:{}", requestId, category.getId());

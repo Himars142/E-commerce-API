@@ -79,7 +79,7 @@ class CartServiceImplTest extends BaseServiceTest {
             when(cartRepository.findByUserId(USER.getId())).thenReturn(Optional.of(CART));
             when(cartMapper.toDTO(CART)).thenReturn(EXPECTED_CART_DTO);
 
-            CartDTO result = underTest.getCart(TOKEN, USER_AGENT);
+            CartDTO result = underTest.getCart(USER_AGENT);
 
             assertThat(result).isNotNull().isEqualTo(EXPECTED_CART_DTO);
 
@@ -97,7 +97,7 @@ class CartServiceImplTest extends BaseServiceTest {
             when(cartRepository.save(any())).thenReturn(CART);
             when(cartMapper.toDTO(CART)).thenReturn(EXPECTED_CART_DTO);
 
-            CartDTO result = underTest.getCart(TOKEN, USER_AGENT);
+            CartDTO result = underTest.getCart(USER_AGENT);
 
             assertThat(result).isNotNull().isEqualTo(EXPECTED_CART_DTO);
 
@@ -133,7 +133,7 @@ class CartServiceImplTest extends BaseServiceTest {
                     .thenReturn(Optional.of(EXISTING_CART_ITEM));
             when(cartItemMapper.changeQuantity(any(CartItemEntity.class), eq(2))).thenReturn(UPDATED_CART_ITEM);
 
-            underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT);
+            underTest.addItemToCart(PRODUCT.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(authService, cartRepository, productService, cartItemRepository, cartItemMapper,
                     cartItemRepository);
@@ -155,7 +155,7 @@ class CartServiceImplTest extends BaseServiceTest {
                     .thenReturn(Optional.empty());
             when(cartItemMapper.createNewCartItemEntity(CART, PRODUCT, 1)).thenReturn(EXISTING_CART_ITEM);
 
-            underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT);
+            underTest.addItemToCart(PRODUCT.getId(), USER_AGENT);
 
             InOrder inOrder = inOrder(authService, cartRepository, productService, cartItemRepository, cartItemMapper,
                     cartItemRepository);
@@ -176,7 +176,7 @@ class CartServiceImplTest extends BaseServiceTest {
                     .thenThrow(new BadRequestException("test error"));
 
             BadRequestException exception = assertThrows(BadRequestException.class,
-                    () -> underTest.addItemToCart(TOKEN, PRODUCT.getId(), USER_AGENT));
+                    () -> underTest.addItemToCart(PRODUCT.getId(), USER_AGENT));
 
             assertThat(exception).isNotNull();
 
@@ -216,7 +216,7 @@ class CartServiceImplTest extends BaseServiceTest {
             when(cartItemMapper.changeQuantity(eq(EXISTING_CART_ITEM), eq(REQUEST.getQuantity())))
                     .thenReturn(UPDATED_CART_ITEM);
 
-            underTest.updateCartItem(TOKEN, PRODUCT_ID, REQUEST, USER_AGENT);
+            underTest.updateCartItem(PRODUCT_ID, REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, productService, cartRepository, cartItemRepository, cartItemMapper,
                     cartItemRepository);
@@ -239,7 +239,7 @@ class CartServiceImplTest extends BaseServiceTest {
             when(cartItemMapper.createNewCartItemEntity(CART, PRODUCT, REQUEST.getQuantity()))
                     .thenReturn(EXISTING_CART_ITEM);
 
-            underTest.updateCartItem(TOKEN, PRODUCT_ID, REQUEST, USER_AGENT);
+            underTest.updateCartItem(PRODUCT_ID, REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, productService, cartRepository, cartItemRepository, cartItemMapper,
                     cartItemRepository);
@@ -276,7 +276,7 @@ class CartServiceImplTest extends BaseServiceTest {
         void removeItemFromCart_ShouldDeleteCartItem() {
             mockRemoveItemFromCart(CART_ITEM);
 
-            underTest.removeItemFromCart(TOKEN, PRODUCT_ID, USER_AGENT);
+            underTest.removeItemFromCart(PRODUCT_ID, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, cartRepository, cartItemRepository, cartItemRepository);
             inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());
@@ -291,7 +291,7 @@ class CartServiceImplTest extends BaseServiceTest {
             mockRemoveItemFromCart(null);
 
             NotFoundException exception = assertThrows(NotFoundException.class,
-                    () -> underTest.removeItemFromCart(TOKEN, PRODUCT_ID, USER_AGENT));
+                    () -> underTest.removeItemFromCart(PRODUCT_ID, USER_AGENT));
 
             assertThat(exception).isNotNull();
 
@@ -318,7 +318,7 @@ class CartServiceImplTest extends BaseServiceTest {
             mockClearCart(null);
 
             NotFoundException exception = assertThrows(NotFoundException.class,
-                    () -> underTest.clearCart(TOKEN, USER_AGENT));
+                    () -> underTest.clearCart(USER_AGENT));
 
             assertThat(exception).isNotNull();
 
@@ -332,7 +332,7 @@ class CartServiceImplTest extends BaseServiceTest {
         void clearCart_ShouldReturnNumberOfDeletedItems() {
             mockClearCart(CART);
 
-            underTest.clearCart(TOKEN, USER_AGENT);
+            underTest.clearCart(USER_AGENT);
 
             InOrder inOrder = inOrder(authService, cartRepository, cartItemRepository);
             inOrder.verify(authService).validateTokenAndGetUser(eq(TOKEN), anyString());

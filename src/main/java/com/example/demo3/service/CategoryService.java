@@ -12,9 +12,9 @@ public interface CategoryService {
 
     CategoryDTO getCategoryById(Long id, String userAgent);
 
-    Long createCategory(String token, CategoryCreateRequestDTO request, String userAgent);
+    Long createCategory(CategoryCreateRequestDTO request, String userAgent);
 
     void checkIfCategoryExist(Long id, String requestId);
 
-    void deleteCategoryById(Long id, String token, String userAgent);
+    void deleteCategoryById(Long id, String userAgent);
 }

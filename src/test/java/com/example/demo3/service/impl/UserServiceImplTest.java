@@ -7,13 +7,13 @@ import com.example.demo3.exception.NotFoundException;
 import com.example.demo3.mapper.UserMapper;
 import com.example.demo3.repository.UserRepository;
 import com.example.demo3.service.impl.testutil.BaseServiceTest;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -33,6 +33,10 @@ class UserServiceImplTest extends BaseServiceTest {
     private TokenServiceImpl tokenService;
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private Authentication authentication;
+    @Mock
+    private SecurityContext securityContext;
 
     @InjectMocks
     private UserServiceImpl underTest;
@@ -45,7 +49,7 @@ class UserServiceImplTest extends BaseServiceTest {
     private static final Long INVALID_USER_ID = 3L;
 
     @BeforeAll
-    static void setUp() {
+    static void beforeAllSetUp() {
         USER.setId(EXISTING_USER_ID);
         USER.setUsername(USERNAME);
         USER.setPassword(VALID_PASSWORD);
@@ -190,19 +194,29 @@ class UserServiceImplTest extends BaseServiceTest {
     @DisplayName("Get my profile tests")
     class GetMyProfile {
 
+        @BeforeEach
+        void setUp() {
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn(USERNAME);
+            SecurityContextHolder.setContext(securityContext);
+        }
+
+        @AfterEach
+        void tearDown() {
+            SecurityContextHolder.clearContext();
+        }
+
         @Test
         @DisplayName("Should return my profile")
         void getMyProfile() {
-            when(tokenService.getUsernameFromJwt(eq(TOKEN), anyString())).thenReturn(USERNAME);
             when(userRepository.findByUsername(any())).thenReturn(Optional.of(USER));
             when(userMapper.toDTO(USER)).thenReturn(new UserProfileDTO());
 
-            UserProfileDTO result = underTest.getMyProfile(TOKEN, USER_AGENT);
+            UserProfileDTO result = underTest.getMyProfile(USER_AGENT);
 
             assertThat(result).isNotNull();
 
-            InOrder inOrder = inOrder(tokenService, userRepository, userMapper);
-            inOrder.verify(tokenService).getUsernameFromJwt(eq(TOKEN), anyString());
+            InOrder inOrder = inOrder(userRepository, userMapper);
             inOrder.verify(userRepository).findByUsername(any());
             inOrder.verify(userMapper).toDTO(USER);
         }
@@ -242,19 +256,28 @@ class UserServiceImplTest extends BaseServiceTest {
     @DisplayName("Update user profile tests")
     class UpdateUserProfile {
 
+        @BeforeEach
+        void setUp() {
+            when(securityContext.getAuthentication()).thenReturn(authentication);
+            when(authentication.getName()).thenReturn(USERNAME);
+            SecurityContextHolder.setContext(securityContext);
+        }
+
+        @AfterEach
+        void tearDown() {
+            SecurityContextHolder.clearContext();
+        }
+
         private static final UserUpdateRequestDTO request = new UserUpdateRequestDTO();
 
         @Test
         @DisplayName("Should throw not found exception user not found")
         void updateUserProfile_ShouldThrowNotFoundExceptionUserNotFound() {
-            when(tokenService.getUsernameFromJwt(eq(TOKEN), any())).thenReturn(USERNAME);
             when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.updateUserProfile(TOKEN, request, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.updateUserProfile(request, USER_AGENT));
 
-            InOrder inOrder = inOrder(tokenService, userRepository);
-            inOrder.verify(tokenService).getUsernameFromJwt(eq(TOKEN), any());
-            inOrder.verify(userRepository).findByUsername(anyString());
+            verify(userRepository).findByUsername(anyString());
         }
 
         @Test
@@ -262,31 +285,25 @@ class UserServiceImplTest extends BaseServiceTest {
         void updateUserProfile_ShouldThrowBadRequestExceptionUserNameNotUnique() {
             request.setUsername(ANOTHER_USER_USERNAME);
 
-            when(tokenService.getUsernameFromJwt(eq(TOKEN), any())).thenReturn(USERNAME);
             when(userRepository.findByUsername(eq(USERNAME))).thenReturn(Optional.of(USER));
             when(userRepository.findByUsername(eq(request.getUsername()))).thenReturn(Optional.of(new UserEntity()));
 
-            assertThrows(BadRequestException.class, () -> underTest.updateUserProfile(TOKEN, request, USER_AGENT));
+            assertThrows(BadRequestException.class, () -> underTest.updateUserProfile(request, USER_AGENT));
 
-            InOrder inOrder = inOrder(tokenService, userRepository);
-            inOrder.verify(tokenService).getUsernameFromJwt(eq(TOKEN), any());
-            inOrder.verify(userRepository).findByUsername(eq(USERNAME));
-            inOrder.verify(userRepository).findByUsername(eq(request.getUsername()));
+            verify(userRepository).findByUsername(eq(USERNAME));
+            verify(userRepository).findByUsername(eq(request.getUsername()));
         }
 
         @Test
         @DisplayName("Should save updated user")
         void updateUserProfile_ShouldSaveUpdatedUser() {
-            when(tokenService.getUsernameFromJwt(eq(TOKEN), any())).thenReturn(USERNAME);
             when(userRepository.findByUsername(eq(USERNAME))).thenReturn(Optional.of(USER));
             when(userRepository.save(any())).thenReturn(USER);
 
-            underTest.updateUserProfile(TOKEN, request, USER_AGENT);
+            underTest.updateUserProfile(request, USER_AGENT);
 
-            InOrder inOrder = inOrder(tokenService, userRepository);
-            inOrder.verify(tokenService).getUsernameFromJwt(eq(TOKEN), any());
-            inOrder.verify(userRepository).findByUsername(eq(USERNAME));
-            inOrder.verify(userRepository).save(any());
+            verify(userRepository).findByUsername(eq(USERNAME));
+            verify(userRepository).save(any());
         }
     }
 

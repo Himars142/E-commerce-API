@@ -113,7 +113,7 @@ class CategoryServiceImplTest extends BaseServiceTest {
             when(categoryRepository.save(CATEGORY)).thenReturn(CATEGORY);
             when(categoryMapper.requestToEntity(requestDTO)).thenReturn(CATEGORY);
 
-            underTest.createCategory(TOKEN, requestDTO, USER_AGENT);
+            underTest.createCategory(requestDTO, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, categoryMapper, categoryRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());

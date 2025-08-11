@@ -12,11 +12,11 @@ public interface ProductService {
 
     PageableResponseProducts getAllProducts(int page, int size, String userAgent);
 
-    Long addProduct(String token, ProductRequestDTO product, String userAgent);
+    Long addProduct(ProductRequestDTO product, String userAgent);
 
-    void updateProduct(String token, UpdateProductRequestDTO product, String userAgent);
+    void updateProduct(UpdateProductRequestDTO product, String userAgent);
 
-    void changeIsActive(String token, Long id, String userAgent);
+    void changeIsActive(Long id, String userAgent);
 
     ProductEntity validateAndGetProduct(Long productId, String requestId);
 

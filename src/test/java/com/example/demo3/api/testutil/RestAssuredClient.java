@@ -56,6 +56,11 @@ public class RestAssuredClient {
         return makeRequestWithId(endpoint, id, Method.GET);
     }
 
+    public static Response makePostRequestWithIdParam(String token, String endpoint, Long id) {
+        endpoint = endpoint + "/" + id.toString();
+        return makeAuthorizedRequest(token, endpoint, Method.POST);
+    }
+
     public static Response makeDeleteRequestWithIdParam(String token, String endpoint, Long id) {
         endpoint = endpoint + "/" + id.toString();
         return makeAuthorizedRequest(token, endpoint, Method.DELETE);

@@ -11,8 +11,13 @@ import com.example.demo3.service.UserService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
 
 import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
 
@@ -52,7 +57,7 @@ public class UserServiceImpl implements UserService {
         if (!request.getPassword().equals(request.getPasswordConfirmation())) {
             throw new BadRequestException("Password and password confirmation are not equal. Request id:" + requestId);
         }
-        String accessToken = tokenService.generateAccessToken(request.getUsername());
+        String accessToken = tokenService.generateAccessTokenForAuth(request.getUsername());
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
         UserEntity userEntity = userRepository
                 .save(userMapper.createUserEntity(request, refreshToken, passwordEncoder.encode(request.getPassword())));
@@ -71,7 +76,7 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Incorrect password. Request id: " + requestId);
         }
-        String accessToken = tokenService.generateAccessToken(user.getUsername());
+        String accessToken = tokenService.generateAccessToken(user.getUsername(), Collections.singletonList(user.getRole()));
         String refreshToken = tokenService.generateRefreshToken(request.getUsername());
         user.setRefreshToken(refreshToken);
         UserEntity userEntity = userRepository.save(user);
@@ -79,12 +84,13 @@ public class UserServiceImpl implements UserService {
         return new JwtResponseDTO(accessToken, refreshToken, userEntity.getId());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Override
-    public UserProfileDTO getMyProfile(String token, String userAgent) {
+    public UserProfileDTO getMyProfile(String userAgent) {
         String requestId = generateRequestID();
         logger.info("User attempt to get own profile. Request id: {}, user agent: {}",
                 requestId, userAgent);
-        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
+        UserEntity entity = userRepository.findByUsername(getCurrentUsername())
                 .orElseThrow(() -> new NotFoundException("User not found. Request id: " + requestId));
         UserProfileDTO response = userMapper.toDTO(entity);
         logger.info("Successfully get profile: {}. Request id; {}", response.getId(), requestId);
@@ -103,12 +109,13 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Override
-    public void updateUserProfile(String token, UserUpdateRequestDTO request, String userAgent) {
+    public void updateUserProfile(UserUpdateRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to update profile. Request id: {}, user agent: {}",
                 requestId, userAgent);
-        UserEntity entity = userRepository.findByUsername(tokenService.getUsernameFromJwt(token, requestId))
+        UserEntity entity = userRepository.findByUsername(getCurrentUsername())
                 .orElseThrow(() -> new NotFoundException("User not found. Request id: " + requestId));
         if (request.getUsername() != null && !request.getUsername().equals(entity.getUsername())) {
             userRepository.findByUsername(request.getUsername()).ifPresent(username -> {
@@ -123,5 +130,10 @@ public class UserServiceImpl implements UserService {
     public UserEntity findByUserName(String username, String requestId) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("User with this username: " + username + " not found" + ". Request id; " + requestId));
+    }
+
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
     }
 }

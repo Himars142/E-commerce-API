@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -51,12 +52,13 @@ public class OrderServiceImpl implements OrderService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderServiceImpl.class);
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public Long createOrder(String token, CreateOrderRequestDTO request, String userAgent) {
+    public Long createOrder(CreateOrderRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to create order. Request id: {}, user agent: {}", requestId, userAgent);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         if (user.getCart() == null || user.getCart().getCartItems().isEmpty()) {
             throw new NotFoundException("User cart is empty or not found. Request id:" + requestId);
         }
@@ -69,12 +71,13 @@ public class OrderServiceImpl implements OrderService {
         return order.getId();
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Override
-    public PageableResponseOrdersDTO getUserOrders(String token, int page, int size, String userAgent) {
+    public PageableResponseOrdersDTO getUserOrders(int page, int size, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to get users orders. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         Page<OrderEntity> orderEntityPage = orderRepository.findByUserId(user.getId(), PageRequest.of(page, size));
         PageableResponseOrdersDTO response = orderMapper.createPageableResponseOrdersDTO(orderEntityPage);
         logger.info("User with id {} orders retrieved. Total elements: {}, total pages: {}",
@@ -82,29 +85,32 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Override
-    public OrderEntityDTO getOrderDetails(String token, Long id, String userAgent) {
+    public OrderEntityDTO getOrderDetails(Long id, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to get order details. Request id: {}, user agent: {}, order id: {}.",
                 requestId, userAgent, id);
         OrderEntity order = orderRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Order with id:" + id + " not found. Request id: " + requestId));
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+                .orElseThrow(() -> new NotFoundException("Order with id:" + id + " not found. Request id: "
+                        + requestId));
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         checkOrderAccess(user, order, requestId);
         OrderEntityDTO response = orderMapper.toOrderEntityDTO(order);
         logger.info("Order details retrieved for orderId {}, request id: {}", id, requestId);
         return response;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public void cancelOrder(String token, Long orderId, String userAgent) {
+    public void cancelOrder(Long orderId, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to cancel order. Request id: {}, user agent: {}, order id: {}.",
                 requestId, userAgent, orderId);
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found! ID: " + orderId + ". Request id: " + requestId));
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         checkOrderAccess(user, order, requestId);
         if (!order.getStatus().equals(OrderStatus.PENDING)) {
             throw new BadRequestException("Order is not pending! Order status:" + order.getStatus() + ". Request id: " + requestId);
@@ -118,12 +124,12 @@ public class OrderServiceImpl implements OrderService {
         logger.info("Success. OrderId {} canceled, request id: {}", orderId, requestId);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Override
-    public PageableResponseOrdersDTO getAllOrders(String token, int page, int size, String status, String userAgent) {
+    public PageableResponseOrdersDTO getAllOrders(int page, int size, String status, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to get all orders. Request id: {}, user agent: {}, page: {}, size: {}.",
                 requestId, userAgent, page, size);
-        authService.checkIsUserAdmin(token, requestId);
         Page<OrderEntity> orderEntityPage;
         String message;
         if (status == null) {
@@ -138,13 +144,13 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Transactional
     @Override
-    public void updateOrderStatus(String token, Long orderId, UpdateOrderStatusRequestDTO request, String userAgent) {
+    public void updateOrderStatus(Long orderId, UpdateOrderStatusRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to update order status. Request id: {}, user agent; {},  status request: {}.",
                 requestId, userAgent, request);
-        authService.checkIsUserAdmin(token, requestId);
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order not found. ID:" + orderId + ". Request id: " + requestId));
         if (order.getStatus().equals(request.getStatus())) {
@@ -175,7 +181,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void checkOrderAccess(UserEntity user, OrderEntity order, String requestId) {
-        if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().equals(user)) {
+        if (user.getRole().equals(UserRole.ROLE_CUSTOMER) && !order.getUser().getId().equals(user.getId())) {
             throw new ForbiddenException("You don`t have access to this order. Request id: " + requestId);
         }
     }

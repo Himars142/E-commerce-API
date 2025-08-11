@@ -134,7 +134,7 @@ class ProductServiceImplTest extends BaseServiceTest {
             when(categoryService.getCategory(any(), anyString())).thenReturn(new CategoryEntity());
             when(productsRepository.findBySku(REQUEST.getSku())).thenReturn(Optional.of(new ProductEntity()));
 
-            assertThrows(BadRequestException.class, () -> underTest.addProduct(TOKEN, REQUEST, USER_AGENT));
+            assertThrows(BadRequestException.class, () -> underTest.addProduct(REQUEST, USER_AGENT));
 
             verify(productsRepository).findBySku(REQUEST.getSku());
             verify(productsRepository, never()).save(any());
@@ -148,7 +148,7 @@ class ProductServiceImplTest extends BaseServiceTest {
             when(productsRepository.save(ADDED_PRODUCT)).thenReturn(ADDED_PRODUCT);
             when(productMapper.createProduct(REQUEST, CATEGORY)).thenReturn(ADDED_PRODUCT);
 
-            underTest.addProduct(TOKEN, REQUEST, USER_AGENT);
+            underTest.addProduct(REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, productsRepository, productMapper, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -176,7 +176,7 @@ class ProductServiceImplTest extends BaseServiceTest {
         void updateProduct_ShouldThrowNotFoundExceptionProductNotFound() {
             when(productsRepository.findById(REQUEST.getId())).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.updateProduct(TOKEN, REQUEST, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.updateProduct(REQUEST, USER_AGENT));
 
             InOrder inOrder = inOrder(authService, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -201,7 +201,7 @@ class ProductServiceImplTest extends BaseServiceTest {
             when(productsRepository.findById(EXISTING_ENTITY_ID)).thenReturn(Optional.of(productToUpdate));
             when(productsRepository.findBySku(request.getSku())).thenReturn(Optional.of(otherProductWithSku));
 
-            assertThrows(BadRequestException.class, () -> underTest.updateProduct(TOKEN, request, USER_AGENT));
+            assertThrows(BadRequestException.class, () -> underTest.updateProduct(request, USER_AGENT));
 
             InOrder inOrder = inOrder(authService, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -218,7 +218,7 @@ class ProductServiceImplTest extends BaseServiceTest {
             when(productMapper.updateProductCategory(CATEGORY, PRODUCT)).thenReturn(PRODUCT);
             when(productMapper.updateProduct(REQUEST, PRODUCT)).thenReturn(PRODUCT);
 
-            underTest.updateProduct(TOKEN, REQUEST, USER_AGENT);
+            underTest.updateProduct(REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, categoryService, productMapper, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -233,7 +233,7 @@ class ProductServiceImplTest extends BaseServiceTest {
             when(productsRepository.findById(REQUEST.getId())).thenReturn(Optional.of(PRODUCT));
             when(productMapper.updateProduct(REQUEST, PRODUCT)).thenReturn(PRODUCT);
 
-            underTest.updateProduct(TOKEN, REQUEST, USER_AGENT);
+            underTest.updateProduct(REQUEST, USER_AGENT);
 
             InOrder inOrder = inOrder(authService, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -251,7 +251,7 @@ class ProductServiceImplTest extends BaseServiceTest {
         void changeIsActive_ShouldThrowNotFoundExceptionProductNotFound() {
             when(productsRepository.findById(NOT_EXISTING_ENTITY_ID)).thenReturn(Optional.empty());
 
-            assertThrows(NotFoundException.class, () -> underTest.changeIsActive(TOKEN, NOT_EXISTING_ENTITY_ID, USER_AGENT));
+            assertThrows(NotFoundException.class, () -> underTest.changeIsActive(NOT_EXISTING_ENTITY_ID, USER_AGENT));
 
             InOrder inOrder = inOrder(authService, productsRepository);
             inOrder.verify(authService).checkIsUserAdmin(eq(TOKEN), anyString());
@@ -265,7 +265,7 @@ class ProductServiceImplTest extends BaseServiceTest {
 
             when(productsRepository.findById(EXISTING_ENTITY_ID)).thenReturn(Optional.of(PRODUCT));
 
-            underTest.changeIsActive(TOKEN, EXISTING_ENTITY_ID, USER_AGENT);
+            underTest.changeIsActive(EXISTING_ENTITY_ID, USER_AGENT);
 
             assertThat(PRODUCT.getIsActive()).isEqualTo(true);
 

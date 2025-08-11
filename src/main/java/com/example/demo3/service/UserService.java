@@ -8,11 +8,11 @@ public interface UserService {
 
     JwtResponseDTO loginUser(UserLoginDTO request, String userAgent);
 
-    UserProfileDTO getMyProfile(String token, String userAgent);
+    UserProfileDTO getMyProfile(String userAgent);
 
     UserProfileDTO getUserProfile(Long id, String userAgent);
 
-    void updateUserProfile(String token, UserUpdateRequestDTO request, String userAgent);
+    void updateUserProfile(UserUpdateRequestDTO request, String userAgent);
 
     UserEntity findByUserName(String username, String requestId);
 }

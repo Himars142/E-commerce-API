@@ -18,6 +18,7 @@ import com.example.demo3.service.ProductService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import static com.example.demo3.utill.GenerateRequestID.generateRequestID;
@@ -49,12 +50,13 @@ public class CartServiceImpl implements CartService {
         this.cartItemMapper = cartItemMapper;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public CartDTO getCart(String token, String userAgent) {
+    public CartDTO getCart(String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to get a cart request id:{}, user agent: {}", requestId, userAgent);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         CartEntity cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new NoContentException("Cart is empty"));
         CartDTO cartDTO = cartMapper.toDTO(cart);
@@ -63,13 +65,14 @@ public class CartServiceImpl implements CartService {
         return cartDTO;
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public void addItemToCart(String token, Long productId, String userAgent) {
+    public void addItemToCart(Long productId, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to add item to a cart request id: {}, user agent: {}, product id: {}",
                 requestId, userAgent, productId);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         CartEntity cart = getOrCreateCartForUser(user);
         ProductEntity product = productService.validateAndGetProduct(productId, requestId);
         CartItemEntity cartItem = cartItemRepository.findByCartIdAndProductId(cart.getId(), product.getId())
@@ -80,13 +83,14 @@ public class CartServiceImpl implements CartService {
                 requestId, productId, cartItem.getQuantity(), cart.getId(), user.getId(), cartItem.getId(), requestId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public void updateCartItem(String token, Long productId, UpdateCartItemRequestDTO request, String userAgent) {
+    public void updateCartItem(Long productId, UpdateCartItemRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to update cart item request id: {}, product id: {}, quantity: {}, user agent: {}",
                 requestId, productId, request.getQuantity(), userAgent);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         ProductEntity product = productService.validateAndGetProduct(productId, requestId);
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity cartItemEntity = cartItemRepository.findByCartIdAndProductId(cart.getId(), productId)
@@ -97,13 +101,14 @@ public class CartServiceImpl implements CartService {
                 productId, request.getQuantity(), cart.getId(), user.getId(), cartItemEntity.getId(), requestId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public void removeItemFromCart(String token, Long productId, String userAgent) {
+    public void removeItemFromCart(Long productId, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to remove item from cart. Request id: {}, user agent: {}, product id: {}",
                 requestId, userAgent, productId);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         CartEntity cart = getOrCreateCartForUser(user);
         CartItemEntity deleteEntity = cartItemRepository
                 .findByCartIdAndProductId(cart.getId(), productId)
@@ -114,12 +119,13 @@ public class CartServiceImpl implements CartService {
                 productId, cart.getId(), user.getId(), requestId);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @Transactional
     @Override
-    public int clearCart(String token, String userAgent) {
+    public int clearCart(String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt clear cart. Request id: {}, user agent: {}", requestId, userAgent);
-        UserEntity user = authService.validateTokenAndGetUser(token, requestId);
+        UserEntity user = authService.getCurrentAuthenticatedUser();
         CartEntity cart = cartRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new NotFoundException("User don`t have cart! Request id: " + requestId));
         int deletedItems = cartItemRepository.deleteAllByCartId(cart.getId());

@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -64,13 +65,13 @@ public class ProductServiceImpl implements ProductService {
         return response;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Transactional
     @Override
-    public Long addProduct(String token, ProductRequestDTO product, String userAgent) {
+    public Long addProduct(ProductRequestDTO product, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to add product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, product.toString());
-        authService.checkIsUserAdmin(token, requestId);
         CategoryEntity category = categoryService.getCategory(product.getCategoryId(), requestId);
         productsRepository.findBySku(product.getSku())
                 .ifPresent(sku -> {
@@ -81,13 +82,13 @@ public class ProductServiceImpl implements ProductService {
         return productEntity.getId();
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Transactional
     @Override
-    public void updateProduct(String token, UpdateProductRequestDTO request, String userAgent) {
+    public void updateProduct(UpdateProductRequestDTO request, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to update product. Request id: {}, user agent: {}, product: {}.",
                 requestId, userAgent, request.toString());
-        authService.checkIsUserAdmin(token, requestId);
         ProductEntity product = productsRepository.findById(request.getId())
                 .orElseThrow(() -> new NotFoundException("Product not found with ID:" + request.getId()));
         if (request.getSku() != null && !request.getSku().equals(product.getSku())) {
@@ -104,13 +105,13 @@ public class ProductServiceImpl implements ProductService {
         logger.info("Success product updated productId:{}, request id: {}", product.getId(), requestId);
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Transactional
     @Override
-    public void changeIsActive(String token, Long id, String userAgent) {
+    public void changeIsActive(Long id, String userAgent) {
         String requestId = generateRequestID();
         logger.info("Attempt to change is active product. Request id: {}, user agent: {}, product id: {}.",
                 requestId, userAgent, id);
-        authService.checkIsUserAdmin(token, requestId);
         ProductEntity product = productsRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Product not found with ID:" + id
                         + ". Request id: " + requestId));

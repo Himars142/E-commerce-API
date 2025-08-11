@@ -13,6 +13,7 @@ public abstract class ApiTest {
     protected static final int DEFAULT_PAGE = 0;
     protected static final int DEFAULT_SIZE = 10;
     protected static final int MAX_ALLOWED_PAGE_SIZE = 50;
+    protected static final String INVALID_TOKEN = "invalid-token";
 
     @BeforeAll
     public static void setup() {

@@ -17,7 +17,7 @@ public class CartItemEntity {
     @JsonBackReference
     private CartEntity cart;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
     @JsonBackReference("productInCart")
     private ProductEntity product;

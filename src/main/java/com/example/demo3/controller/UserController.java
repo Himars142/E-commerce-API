@@ -36,9 +36,8 @@ public class UserController {
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<?> getMyProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
-                                          @RequestHeader("Authorization") @NotEmpty String token) {
-        return ResponseEntity.ok(userService.getMyProfile(token, userAgent));
+    public ResponseEntity<?> getMyProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent) {
+        return ResponseEntity.ok(userService.getMyProfile(userAgent));
     }
 
     @GetMapping("/profile/{id}")
@@ -49,9 +48,8 @@ public class UserController {
 
     @PutMapping("/profile")
     public ResponseEntity<?> updateUserProfile(@RequestHeader(name = "User-Agent", required = false) String userAgent,
-                                               @RequestHeader("Authorization") @NotEmpty String token,
                                                @Valid @RequestBody UserUpdateRequestDTO request) {
-        userService.updateUserProfile(token, request, userAgent);
+        userService.updateUserProfile(request, userAgent);
         return ResponseEntity.ok("Profile updated");
     }
 }

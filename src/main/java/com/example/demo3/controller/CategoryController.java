@@ -34,19 +34,17 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createCategory(@RequestHeader("Authorization") @NotEmpty String token,
-                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
+    public ResponseEntity<?> createCategory(@RequestHeader(name = "User-Agent", required = false) String userAgent,
                                             @Valid @RequestBody CategoryCreateRequestDTO request) {
-        Long id = categoryService.createCategory(token, request, userAgent);
+        Long id = categoryService.createCategory(request, userAgent);
         URI location = URI.create("/api/categories/" + id);
         return ResponseEntity.created(location).body("Category created! ID: " + id);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCategory(@RequestHeader("Authorization") @NotEmpty String token,
-                                            @RequestHeader(name = "User-Agent", required = false) String userAgent,
+    public ResponseEntity<?> deleteCategory(@RequestHeader(name = "User-Agent", required = false) String userAgent,
                                             @PathVariable(name = "id") @Positive Long id) {
-        categoryService.deleteCategoryById(id, token, userAgent);
+        categoryService.deleteCategoryById(id, userAgent);
         return ResponseEntity.ok("Category deleted!");
     }
 }
